@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "932379156472",
+    "firebase_url": "https://point-of-sales-app-25e2b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "point-of-sales-app-25e2b",
+    "storage_bucket": "point-of-sales-app-25e2b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932379156472:android:eec8ef5a37c6a48555c00d",
+        "android_client_info": {
+          "package_name": "com.example.orderstobeserved"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "932379156472-vbtmhdl5gfu5q2n3e6mtq1q6f30d8jrl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZ1oJuagSPQ_9VWiFONeArwxtUsgLGhCA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "932379156472-vbtmhdl5gfu5q2n3e6mtq1q6f30d8jrl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
