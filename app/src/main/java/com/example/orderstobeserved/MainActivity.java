@@ -1,31 +1,25 @@
 package com.example.orderstobeserved;
 
-import static java.security.AccessController.getContext;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.TextView;
 
-import com.baoyz.swipemenulistview.SwipeMenu;
-import com.baoyz.swipemenulistview.SwipeMenuCreator;
-import com.baoyz.swipemenulistview.SwipeMenuItem;
 import com.baoyz.swipemenulistview.SwipeMenuListView;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -33,6 +27,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.sql.Ref;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Map;
@@ -43,17 +38,18 @@ public class MainActivity extends AppCompatActivity {
     private SwipeMenuListView swipeMenuListView;
     private ArrayList<Integer> mCustomerNumber;
     private ArrayList<String> mOrders;
-    private ArrayList<Integer> mQuantity;
+    private ArrayList<String> mQuantity;
 
     private ArrayList<Integer> NewCustomerNumber;
     private ArrayList<String> NewOrders;
-    private ArrayList<Integer> NewQuantity;
+    private ArrayList<String> NewQuantity;
 //    private TextView totalHariIniTextView;
     private DatabaseReference reff;
 //    private Query reffToday;
     Query query;
     MyAdapter adapter;
     Query nestedQuery;
+    Query query_udateStatus;
 
     RecyclerView recyclerView;
     RecyclerAdapter recyclerAdapter;
@@ -61,29 +57,79 @@ public class MainActivity extends AppCompatActivity {
     DividerItemDecoration dividerItemDecoration;
     ItemTouchHelper itemTouchHelper;
 
+    SwipeRefreshLayout swipeRefreshLayout;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        reff = FirebaseDatabase.getInstance("https://point-of-sales-app-25e2b-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference().child("TransacationDetail");
+        reff = FirebaseDatabase.getInstance("https://point-of-sales-app-25e2b-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference("TransacationStatus");
         query = reff.orderByChild("status").equalTo("Serving");
         query.addListenerForSingleValueEvent(valueEventListener);
+
+
 
 
         //Add Value Listener
         reff.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                query = reff.orderByChild("status").equalTo("Serving");
-                query.addListenerForSingleValueEvent(valueEventListener);
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                   if (dataSnapshot.exists()) {
+
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
+                    Object customerNumber_object = map.get("customerNumber");
+                    String customerNumber_string = (String.valueOf(customerNumber_object));
+                    Log.i("Customer number:", customerNumber_string);
+                    int customerNumber_int = Integer.parseInt(customerNumber_string);
+                    if(!NewCustomerNumber.contains(customerNumber_int)) {
+                        Object pesanan_object = map.get("itemID");
+                        String pesanan_String = (String.valueOf(pesanan_object));
+                        Object quantity_object = map.get("quantity");
+                        String quantity_string = (String.valueOf(quantity_object));
+                        NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
+                        NewOrders.add(pesanan_String);
+                        NewQuantity.add(quantity_string);
+
+                    } else {
+                        Log.i("Bug", "sudah tersaring");
+                    }
+                    Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
+                }
+                       recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+                       recyclerView.setAdapter(recyclerAdapter);
+
+            }
+
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
             }
-        })
+        });
+
+//        reff.addValueEventListener(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                NewQuantity.clear();
+//                NewOrders.clear();
+//                NewQuantity.clear();
+//
+//
+//                NewCustomerNumber.add(customerNumber_string);
+//                NewOrders.add(pesanan_String);
+//                NewQuantity.add(quantity_string);
+//                recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+//                recyclerView.setAdapter(recyclerAdapter);
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError error) {
+//
+//            }
+//        });
 
 
         //Add data dummy
@@ -95,6 +141,8 @@ public class MainActivity extends AppCompatActivity {
         NewOrders = new ArrayList<>();
         NewQuantity = new ArrayList<>();
 
+
+
         mCustomerNumber.add(1);
         mCustomerNumber.add(2);
         mCustomerNumber.add(3);
@@ -103,9 +151,9 @@ public class MainActivity extends AppCompatActivity {
         mOrders.add("Siomay, Tes 2, Bakso, Es Teh, Es jeruk");
         mOrders.add("Siomay, Nasi Ayam, Tes 3, Es Teh, Es jeruk");
 
-        mQuantity.add(2);
-        mQuantity.add(1);
-        mQuantity.add(4);
+        mQuantity.add("2");
+        mQuantity.add("1");
+        mQuantity.add("4");
 
         //SwipeMenuListView
 //        swipeMenuListView =  (SwipeMenuListView) findViewById(R.id.listView);
@@ -121,10 +169,13 @@ public class MainActivity extends AppCompatActivity {
 
         itemTouchHelper.attachToRecyclerView(recyclerView);
 
-//        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders);
-//        recyclerView.setAdapter(recyclerAdapter);
-//        recyclerView.addItemDecoration(dividerItemDecoration);
-//        itemTouchHelper.attachToRecyclerView(recyclerView);
+        Log.i("CustomerNumber DH",  ""+ NewCustomerNumber.size());
+        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+        recyclerView.setAdapter(recyclerAdapter);
+
+
+
+
 
 
 
@@ -144,6 +195,9 @@ public class MainActivity extends AppCompatActivity {
                     NewCustomerNumber.remove(position);
                     NewOrders.remove(position);
                     recyclerAdapter.notifyDataSetChanged();
+                    reff.child("customerNumber");
+                    query_udateStatus = reff.orderByChild("customerNumber").equalTo(NewCustomerNumber.get(position));
+
 
 
                     break;
@@ -200,33 +254,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    ValueEventListener valueEventListener = new ValueEventListener() {
+        ValueEventListener valueEventListener = new ValueEventListener() {
         @Override
         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
             if (dataSnapshot.exists()) {
+
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
-                    Object noCustomer = map.get("noCustomer");
-                    int noCustomerInt = Integer.parseInt(String.valueOf(noCustomer));
-                    if(!NewCustomerNumber.contains(noCustomerInt)) {
-                        NewCustomerNumber.add(noCustomerInt);
-                        Log.i("CustomerID", ""+noCustomerInt);
+                    Object customerNumber_object = map.get("customerNumber");
+                    String customerNumber_string = (String.valueOf(customerNumber_object));
+                    Log.i("Customer number:", customerNumber_string);
+                    int customerNumber_int = Integer.parseInt(customerNumber_string);
+                    if(!NewCustomerNumber.contains(customerNumber_int)) {
+                        Object pesanan_object = map.get("itemID");
+                        String pesanan_String = (String.valueOf(pesanan_object));
+                        Object quantity_object = map.get("quantity");
+                        String quantity_string = (String.valueOf(quantity_object));
+                        NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
+                        NewOrders.add(pesanan_String);
+                        NewQuantity.add(quantity_string);
+
+                    } else {
+                        Log.i("Bug", "sudah tersaring");
                     }
                 }
-                int i = 0;
-                while (i<NewCustomerNumber.size()) {
-                    nestedQuery = reff.orderByChild("noCustomer").equalTo(NewCustomerNumber.get(i));
-                    nestedQuery.addListenerForSingleValueEvent(valueEventListener1);
-                    i++;
-                    Log.i("query nested", "Berjalan");
-                }
-
-
-            } else {
-                Log.i("Query kurang tepat", "Serving");
             }
-
-
+//            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+//            recyclerView.setAdapter(recyclerAdapter);
         }
 
         @Override
@@ -235,45 +289,27 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    public void removeFirstIndex(){
-        NewCustomerNumber.remove(0);
-        NewOrders.remove(0);
-        mQuantity.remove(0);
-        adapter = new MyAdapter(getApplicationContext(), NewCustomerNumber, NewOrders);
-        swipeMenuListView.setAdapter(adapter);
+
+    public void Refresh() {
+        swipeRefreshLayout.setRefreshing(true);
+
+        NewCustomerNumber.clear();
+        NewOrders.clear();
+        query.addListenerForSingleValueEvent(valueEventListener);
+        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+        recyclerView.setAdapter(recyclerAdapter);
+//        NewCustomerNumber.add(1);
+//        NewOrders.add("HALOO");
+        recyclerView.setAdapter(recyclerAdapter);
+//        swipeMenuListView.setAdapter(adapter);
+//        recyclerAdapter.notifyDataSetChanged();
+
+
+        swipeRefreshLayout.setRefreshing(false);
     }
 
-    ValueEventListener valueEventListener1 = new ValueEventListener() {
-        @Override
-        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-            String pesanan = "";
-            if (dataSnapshot.exists()) {
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
-                    Object pesanan_single = map.get("itemID");
-                    String pesanan_single_String = (String.valueOf(pesanan_single));
-                    pesanan += pesanan_single_String +", ";
-                    Log.i("Pesanan", pesanan);
-                }
-                NewOrders.add(pesanan);
-//                Log.i("Pesanan", pesanan);
-            }
-            Log.i("Size New Orders", ""+ NewOrders.size());
-//            adapter = new MyAdapter(getApplicationContext(), NewCustomerNumber, NewOrders);
-//            swipeMenuListView.setAdapter(adapter);
-            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders);
-            recyclerView.setAdapter(recyclerAdapter);
-//            recyclerView.addItemDecoration(dividerItemDecoration);
 
 
-
-        }
-
-        @Override
-        public void onCancelled(@NonNull DatabaseError error) {
-
-        }
-    };
 
 
 

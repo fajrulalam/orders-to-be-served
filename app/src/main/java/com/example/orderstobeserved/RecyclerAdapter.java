@@ -11,16 +11,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
-public class RecyclerAdapter  extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
+public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
     private static final String TAG = "RecycleAdapter";
     int count = 0;
 
     ArrayList<Integer> NewCustomerNumber;
     ArrayList<String> NewOrders;
+    ArrayList<String> NewQuantity;
 
-    public RecyclerAdapter(ArrayList<Integer> newCustomerNumber, ArrayList<String> newOrders) {
+    public RecyclerAdapter(ArrayList<Integer> newCustomerNumber, ArrayList<String> newOrders, ArrayList<String> NewQuantity) {
         this.NewCustomerNumber = newCustomerNumber;
         this.NewOrders = newOrders;
+        this.NewQuantity = NewQuantity;
     }
 
     @NonNull
