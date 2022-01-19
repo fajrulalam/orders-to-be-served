@@ -1,8 +1,12 @@
 package com.example.orderstobeserved;
 
+import static java.security.AccessController.getContext;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -54,6 +58,9 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     RecyclerAdapter recyclerAdapter;
 
+    DividerItemDecoration dividerItemDecoration;
+    ItemTouchHelper itemTouchHelper;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +71,19 @@ public class MainActivity extends AppCompatActivity {
         query.addListenerForSingleValueEvent(valueEventListener);
 
 
+        //Add Value Listener
+        reff.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                query = reff.orderByChild("status").equalTo("Serving");
+                query.addListenerForSingleValueEvent(valueEventListener);
+            }
 
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
 
+            }
+        })
 
 
         //Add data dummy
@@ -95,19 +113,51 @@ public class MainActivity extends AppCompatActivity {
 //        adapter = new MyAdapter(this, mCustomerNumber, mOrders);
 //        swipeMenuListView.setAdapter(adapter);
         recyclerView = findViewById(R.id.recyclerView);
+        dividerItemDecoration = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
+        dividerItemDecoration.setDrawable(getApplicationContext().getResources().getDrawable(R.drawable.line_divider));
+        itemTouchHelper = new ItemTouchHelper(simpleCallback);
 
 
 
+        itemTouchHelper.attachToRecyclerView(recyclerView);
 
-
-
-
-
-
+//        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders);
+//        recyclerView.setAdapter(recyclerAdapter);
+//        recyclerView.addItemDecoration(dividerItemDecoration);
+//        itemTouchHelper.attachToRecyclerView(recyclerView);
 
 
 
     }
+
+    ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
+        @Override
+        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+            return false;
+        }
+
+        @Override
+        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            int position = viewHolder.getAdapterPosition();
+            switch (direction) {
+                case 4:
+                    NewCustomerNumber.remove(position);
+                    NewOrders.remove(position);
+                    recyclerAdapter.notifyDataSetChanged();
+
+
+                    break;
+                case 8:
+                    NewCustomerNumber.remove(position);
+                    NewOrders.remove(position);
+                    recyclerAdapter.notifyDataSetChanged();
+                    Log.i("Swipe", "Right!");
+
+                    break;
+
+            }
+        }
+    };
 
     public String getDate() {
         Long datetime = System.currentTimeMillis();
@@ -213,6 +263,10 @@ public class MainActivity extends AppCompatActivity {
 //            swipeMenuListView.setAdapter(adapter);
             recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders);
             recyclerView.setAdapter(recyclerAdapter);
+//            recyclerView.addItemDecoration(dividerItemDecoration);
+
+
+
         }
 
         @Override

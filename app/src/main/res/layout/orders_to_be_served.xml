@@ -4,6 +4,9 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="130dp"
+    android:background="@color/white"
+    android:layout_marginTop="2dp"
+    android:layout_marginBottom="2dp"
     >
 
     <TextView
@@ -11,8 +14,9 @@
         android:layout_width="140dp"
         android:layout_height="wrap_content"
         android:layout_marginLeft="5dp"
-        android:layout_marginTop="5dp"
-        android:background="#F9A825"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp"
+        android:background="#D9F9A825"
         android:fontFamily="@font/montserrat_bold"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"
@@ -28,7 +32,10 @@
         android:id="@+id/pesananTextView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="10dp"
+        android:paddingLeft="10dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:paddingRight="20dp"
         android:layout_marginLeft="20dp"
         android:text="Pesanan"
         android:textColor="#555454"
