@@ -32,7 +32,9 @@ import com.google.firebase.database.ValueEventListener;
 import java.sql.Ref;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 
@@ -100,8 +102,24 @@ public class MainActivity extends AppCompatActivity {
                                         String pesanan_String = (String.valueOf(pesanan_object));
                                         Object quantity_object = map.get("quantity");
                                         String quantity_string = (String.valueOf(quantity_object));
+
+                                        List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
+                                        List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
+                                        Log.i("Quantity", quantity_string);
+                                        int i = 0;
+                                        String item_quantity_combined = "";
+                                        while (i<itemID_uncombined.size()) {
+                                            String item_container = itemID_uncombined.get(i);
+                                            String quantiy_container = quantity_uncombined.get(i);
+                                            if (i == itemID_uncombined.size() -1) {
+                                                item_quantity_combined += item_container + " (" + quantiy_container + ")";
+                                            } else {
+                                                item_quantity_combined += item_container + " (" + quantiy_container + ") , ";
+                                            }
+                                            i++;
+                                        }
                                         NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-                                        NewOrders.add(pesanan_String);
+                                        NewOrders.add(item_quantity_combined);
                                         NewQuantity.add(quantity_string);
 
                                     } else {
@@ -285,6 +303,8 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     Log.i("Hello", "hi");
                     if (dataSnapshot.exists()) {
+
+                        //Get the raw data
                         for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                             Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
                             Object customerNumber_object = map.get("customerNumber");
@@ -294,16 +314,32 @@ public class MainActivity extends AppCompatActivity {
                             if(!NewCustomerNumber.contains(customerNumber_int)) {
                                 Object pesanan_object = map.get("itemID");
                                 String pesanan_String = (String.valueOf(pesanan_object));
+
                                 Object quantity_object = map.get("quantity");
                                 String quantity_string = (String.valueOf(quantity_object));
+
+                                List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
+                                List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
+                                Log.i("Quantity", quantity_string);
+                                int i = 0;
+                                String item_quantity_combined = "";
+                                while (i<itemID_uncombined.size()) {
+                                    String item_container = itemID_uncombined.get(i);
+                                    String quantiy_container = quantity_uncombined.get(i);
+                                    item_quantity_combined += item_container + "(" + quantiy_container + "), ";
+                                    i++;
+                                }
                                 NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-                                NewOrders.add(pesanan_String);
+                                NewOrders.add(item_quantity_combined);
                                 NewQuantity.add(quantity_string);
 
                             } else {
                                 Log.i("Bug", "sudah tersaring");
                             }
                         }
+
+                        //Combining the item with the quantity
+
                     }
                 }
             }, 5000);
