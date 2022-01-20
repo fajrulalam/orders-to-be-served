@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -17,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.baoyz.swipemenulistview.SwipeMenuListView;
 import com.google.firebase.database.ChildEventListener;
@@ -30,7 +32,9 @@ import com.google.firebase.database.ValueEventListener;
 import java.sql.Ref;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseReference reff;
 //    private Query reffToday;
     Query query;
+    Query query2;
     MyAdapter adapter;
     Query nestedQuery;
     Query query_udateStatus;
@@ -66,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         reff = FirebaseDatabase.getInstance("https://point-of-sales-app-25e2b-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference("TransacationStatus");
         query = reff.orderByChild("status").equalTo("Serving");
+        query2 = reff.child("status").equalTo("Serving");
         query.addListenerForSingleValueEvent(valueEventListener);
 
 
@@ -75,32 +81,50 @@ public class MainActivity extends AppCompatActivity {
         reff.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                   if (dataSnapshot.exists()) {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.i("Hello", "hi");
+                        if (dataSnapshot.exists()) {
 
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
-                    Object customerNumber_object = map.get("customerNumber");
-                    String customerNumber_string = (String.valueOf(customerNumber_object));
-                    Log.i("Customer number:", customerNumber_string);
-                    int customerNumber_int = Integer.parseInt(customerNumber_string);
-                    if(!NewCustomerNumber.contains(customerNumber_int)) {
-                        Object pesanan_object = map.get("itemID");
-                        String pesanan_String = (String.valueOf(pesanan_object));
-                        Object quantity_object = map.get("quantity");
-                        String quantity_string = (String.valueOf(quantity_object));
-                        NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-                        NewOrders.add(pesanan_String);
-                        NewQuantity.add(quantity_string);
+                            for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
+                                Object customerNumber_object = map.get("customerNumber");
+                                String customerNumber_string = (String.valueOf(customerNumber_object));
+                                Log.i("Customer number:", customerNumber_string);
 
-                    } else {
-                        Log.i("Bug", "sudah tersaring");
+                                try {
+                                    int customerNumber_int = Integer.parseInt(customerNumber_string);
+                                    if(!NewCustomerNumber.contains(customerNumber_int)) {
+                                        Object pesanan_object = map.get("itemID");
+                                        String pesanan_String = (String.valueOf(pesanan_object));
+                                        Object quantity_object = map.get("quantity");
+                                        String quantity_string = (String.valueOf(quantity_object));
+                                        NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
+                                        NewOrders.add(pesanan_String);
+                                        NewQuantity.add(quantity_string);
+
+                                    } else {
+                                        Log.i("Bug", "sudah tersaring");
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
+                                    Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
+                                    startActivity(refresh);//Start the same Activity
+                                    finish(); //finish Activity.
+
+                                }
+
+                                Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
+                            }
+                            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+                            recyclerView.setAdapter(recyclerAdapter);
+
+                        }
                     }
-                    Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
-                }
-                       recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
-                       recyclerView.setAdapter(recyclerAdapter);
+                },000);
 
-            }
 
             }
 
@@ -190,26 +214,25 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
             int position = viewHolder.getAdapterPosition();
-            switch (direction) {
-                case 4:
-                    NewCustomerNumber.remove(position);
-                    NewOrders.remove(position);
-                    recyclerAdapter.notifyDataSetChanged();
-                    reff.child("customerNumber");
-                    query_udateStatus = reff.orderByChild("customerNumber").equalTo(NewCustomerNumber.get(position));
+//                    NewCustomerNumber.remove(position);
+//                    NewOrders.remove(position);
+//                    recyclerAdapter.notifyDataSetChanged();
+                HashMap status_update = new HashMap();
+                status_update.put("status", "Served");
+                String customerNumberToBeRemoved = String.valueOf(NewCustomerNumber.get(position));
+                String itemIDToBeRemoved = String.valueOf(NewOrders.get(position));
+                String quantityToBeRemoved = String.valueOf(NewQuantity.get(position));
+                reff.child(customerNumberToBeRemoved).removeValue();
+                Toast.makeText(getApplicationContext(), customerNumberToBeRemoved, Toast.LENGTH_SHORT).show();
+//                reff.child(customerNumberToBeRemoved).child("status").setValue("Served");
+//                reff.child(customerNumberToBeRemoved).child("customerNumber").setValue(Integer.parseInt(customerNumberToBeRemoved));
+//                reff.child(customerNumberToBeRemoved).child("itemID").setValue(itemIDToBeRemoved);
+//                reff.child(customerNumberToBeRemoved).child("quantity").setValue(quantityToBeRemoved);
+//                query_udateStatus = reff.orderByChild("customerNumber").equalTo(NewCustomerNumber.get(position));
+                NewCustomerNumber.remove(position);
+                NewOrders.remove(position);
+                recyclerAdapter.notifyDataSetChanged();
 
-
-
-                    break;
-                case 8:
-                    NewCustomerNumber.remove(position);
-                    NewOrders.remove(position);
-                    recyclerAdapter.notifyDataSetChanged();
-                    Log.i("Swipe", "Right!");
-
-                    break;
-
-            }
         }
     };
 
@@ -257,28 +280,34 @@ public class MainActivity extends AppCompatActivity {
         ValueEventListener valueEventListener = new ValueEventListener() {
         @Override
         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-            if (dataSnapshot.exists()) {
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Log.i("Hello", "hi");
+                    if (dataSnapshot.exists()) {
+                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                            Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
+                            Object customerNumber_object = map.get("customerNumber");
+                            String customerNumber_string = (String.valueOf(customerNumber_object));
+                            Log.i("Customer number:", customerNumber_string);
+                            int customerNumber_int = Integer.parseInt(customerNumber_string);
+                            if(!NewCustomerNumber.contains(customerNumber_int)) {
+                                Object pesanan_object = map.get("itemID");
+                                String pesanan_String = (String.valueOf(pesanan_object));
+                                Object quantity_object = map.get("quantity");
+                                String quantity_string = (String.valueOf(quantity_object));
+                                NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
+                                NewOrders.add(pesanan_String);
+                                NewQuantity.add(quantity_string);
 
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
-                    Object customerNumber_object = map.get("customerNumber");
-                    String customerNumber_string = (String.valueOf(customerNumber_object));
-                    Log.i("Customer number:", customerNumber_string);
-                    int customerNumber_int = Integer.parseInt(customerNumber_string);
-                    if(!NewCustomerNumber.contains(customerNumber_int)) {
-                        Object pesanan_object = map.get("itemID");
-                        String pesanan_String = (String.valueOf(pesanan_object));
-                        Object quantity_object = map.get("quantity");
-                        String quantity_string = (String.valueOf(quantity_object));
-                        NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-                        NewOrders.add(pesanan_String);
-                        NewQuantity.add(quantity_string);
-
-                    } else {
-                        Log.i("Bug", "sudah tersaring");
+                            } else {
+                                Log.i("Bug", "sudah tersaring");
+                            }
+                        }
                     }
                 }
-            }
+            }, 5000);
+
 //            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
 //            recyclerView.setAdapter(recyclerAdapter);
         }
