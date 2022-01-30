@@ -28,6 +28,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.sql.Ref;
 import java.sql.Timestamp;
@@ -66,6 +67,9 @@ public class MainActivity extends AppCompatActivity {
 
     SwipeRefreshLayout swipeRefreshLayout;
 
+    FirebaseFirestore fs;
+    Map<String, Object> pesanan = new HashMap<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
         query2 = reff.child("status").equalTo("Serving");
         query.addListenerForSingleValueEvent(valueEventListener);
 
+        //Test Firestore
+        fs = FirebaseFirestore.getInstance();
 
 
 
@@ -301,7 +307,6 @@ public class MainActivity extends AppCompatActivity {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    Log.i("Hello", "hi");
                     if (dataSnapshot.exists()) {
 
                         //Get the raw data
