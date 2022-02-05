@@ -45,7 +45,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         int bungkus = Integer.parseInt(NewBungkusArrayList.get(position));
         if (bungkus == 1 ) {
-            holder.noCustomerTextView.setBackgroundColor(Color.parseColor("#ff7236"));
+            holder.noCustomerTextView.setBackgroundColor(Color.parseColor("#FF1565C0"));
             holder.pesananTextView.setText(String.valueOf(NewOrders.get(position)));
             holder.noCustomerTextView.setText(String.valueOf(NewCustomerNumber.get(position)));
         } else {
