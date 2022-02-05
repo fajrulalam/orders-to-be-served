@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Integer> NewCustomerNumber;
     private ArrayList<String> NewOrders;
     private ArrayList<String> NewQuantity;
+    private ArrayList<String> NewBungkusArrayList;
 //    private TextView totalHariIniTextView;
     private DatabaseReference reff;
 //    private Query reffToday;
@@ -108,7 +109,8 @@ public class MainActivity extends AppCompatActivity {
                                         String pesanan_String = (String.valueOf(pesanan_object));
                                         Object quantity_object = map.get("quantity");
                                         String quantity_string = (String.valueOf(quantity_object));
-
+                                        Object bungkus_object = map.get("bungkus");
+                                        String bungkus_string = String.valueOf(bungkus_object);
                                         List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
                                         List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
                                         Log.i("Quantity", quantity_string);
@@ -127,6 +129,8 @@ public class MainActivity extends AppCompatActivity {
                                         NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
                                         NewOrders.add(item_quantity_combined);
                                         NewQuantity.add(quantity_string);
+                                        NewBungkusArrayList.add(bungkus_string);
+                                        Log.i("Bungkus", "" + bungkus_string);
 
                                     } else {
                                         Log.i("Bug", "sudah tersaring");
@@ -142,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
                             }
-                            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+                            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList);
                             recyclerView.setAdapter(recyclerAdapter);
 
                         }
@@ -188,6 +192,7 @@ public class MainActivity extends AppCompatActivity {
         NewCustomerNumber = new ArrayList<>();
         NewOrders = new ArrayList<>();
         NewQuantity = new ArrayList<>();
+        NewBungkusArrayList = new ArrayList<>();
 
 
 
@@ -218,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(recyclerView);
 
         Log.i("CustomerNumber DH",  ""+ NewCustomerNumber.size());
-        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList);
         recyclerView.setAdapter(recyclerAdapter);
 
 
@@ -323,6 +328,9 @@ public class MainActivity extends AppCompatActivity {
                                 Object quantity_object = map.get("quantity");
                                 String quantity_string = (String.valueOf(quantity_object));
 
+                                Object bungkus_object = map.get("bungkus");
+                                String bungkus_string = String.valueOf(bungkus_object);
+
                                 List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
                                 List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
                                 Log.i("Quantity", quantity_string);
@@ -337,6 +345,7 @@ public class MainActivity extends AppCompatActivity {
                                 NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
                                 NewOrders.add(item_quantity_combined);
                                 NewQuantity.add(quantity_string);
+                                NewBungkusArrayList.add(bungkus_string);
 
                             } else {
                                 Log.i("Bug", "sudah tersaring");
@@ -366,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
         NewCustomerNumber.clear();
         NewOrders.clear();
         query.addListenerForSingleValueEvent(valueEventListener);
-        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
+        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList);
         recyclerView.setAdapter(recyclerAdapter);
 //        NewCustomerNumber.add(1);
 //        NewOrders.add("HALOO");
