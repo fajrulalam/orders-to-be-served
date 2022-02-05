@@ -46,7 +46,6 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         int bungkus = Integer.parseInt(NewBungkusArrayList.get(position));
         if (bungkus == 1 ) {
             holder.noCustomerTextView.setBackgroundColor(Color.parseColor("#ff7236"));
-            holder.noCustomerTextView.setText(String.valueOf(NewCustomerNumber.get(position) + "B"));
             holder.pesananTextView.setText(String.valueOf(NewOrders.get(position)));
             holder.noCustomerTextView.setText(String.valueOf(NewCustomerNumber.get(position)));
         } else {
