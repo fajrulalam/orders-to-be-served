@@ -33,8 +33,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
-        Log.i(TAG, "onCreateViewHolder: " + count++ );
-
+        Log.i(TAG, "onCreateViewHolder: " + count++);
         LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
         View view = layoutInflater.inflate(R.layout.orders_to_be_served, parent, false);
         ViewHolder viewHolder = new ViewHolder(view);
@@ -45,14 +44,13 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         int bungkus = Integer.parseInt(NewBungkusArrayList.get(position));
         if (bungkus == 1 ) {
-            holder.noCustomerTextView.setBackgroundColor(Color.parseColor("#FF1565C0"));
-            holder.pesananTextView.setText(String.valueOf(NewOrders.get(position)));
-            holder.noCustomerTextView.setText(String.valueOf(NewCustomerNumber.get(position)));
-        } else {
+            holder.noCustomerTextView.setBackgroundColor(Color.parseColor("#F9A825"));
+
+        }
             holder.pesananTextView.setText(String.valueOf(NewOrders.get(position)));
             holder.noCustomerTextView.setText(String.valueOf(NewCustomerNumber.get(position)));
 
-        }
+
 
 
     }

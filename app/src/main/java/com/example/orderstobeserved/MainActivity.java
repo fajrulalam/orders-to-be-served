@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baoyz.swipemenulistview.SwipeMenuListView;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -28,7 +29,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.sql.Ref;
 import java.sql.Timestamp;
@@ -85,83 +90,153 @@ public class MainActivity extends AppCompatActivity {
         //Test Firestore
         fs = FirebaseFirestore.getInstance();
 
-
-
-        //Add Value Listener
-        reff.addValueEventListener(new ValueEventListener() {
+        fs.collection("Status").whereEqualTo("status", "Serving").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.i("Hello", "hi");
-                        if (dataSnapshot.exists()) {
+            public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                if (error !=null) {
+                    Log.e(TAG, "onEvent", error);
+                    return;
+                }
+                if (value != null){
+                    List<DocumentSnapshot> snapshotList = value.getDocuments();
+                    for (DocumentSnapshot snapshot : snapshotList) {
 
-                            for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                                Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
-                                Object customerNumber_object = map.get("customerNumber");
-                                String customerNumber_string = (String.valueOf(customerNumber_object));
-                                Log.i("Customer number:", customerNumber_string);
+                        Map<String, Object> map = (Map<String, Object>) snapshot.getData();
+                        Object customerNumber_object = map.get("customerNumber");
+                        String customerNumber_string = (String.valueOf(customerNumber_object));
+                        Log.i("Customer number:", customerNumber_string);
 
-                                try {
-                                    int customerNumber_int = Integer.parseInt(customerNumber_string);
-                                    if(!NewCustomerNumber.contains(customerNumber_int)) {
-                                        Object pesanan_object = map.get("itemID");
-                                        String pesanan_String = (String.valueOf(pesanan_object));
-                                        Object quantity_object = map.get("quantity");
-                                        String quantity_string = (String.valueOf(quantity_object));
-                                        Object bungkus_object = map.get("bungkus");
-                                        String bungkus_string = String.valueOf(bungkus_object);
-                                        List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
-                                        List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
-                                        Log.i("Quantity", quantity_string);
-                                        int i = 0;
-                                        String item_quantity_combined = "";
-                                        while (i<itemID_uncombined.size()) {
-                                            String item_container = itemID_uncombined.get(i);
-                                            String quantiy_container = quantity_uncombined.get(i);
-                                            if (i == itemID_uncombined.size() -1) {
-                                                item_quantity_combined += item_container + " (" + quantiy_container + ")";
-                                            } else {
-                                                item_quantity_combined += item_container + " (" + quantiy_container + ") , ";
-                                            }
-                                            i++;
-                                        }
-                                        NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-                                        NewOrders.add(item_quantity_combined);
-                                        NewQuantity.add(quantity_string);
-                                        NewBungkusArrayList.add(bungkus_string);
-                                        Log.i("Bungkus", "" + bungkus_string);
-
+                        try {
+                            int customerNumber_int = Integer.parseInt(customerNumber_string);
+                            if(!NewCustomerNumber.contains(customerNumber_int)) {
+                                Object pesanan_object = map.get("itemID");
+                                String pesanan_String = (String.valueOf(pesanan_object));
+                                Object quantity_object = map.get("quantity");
+                                String quantity_string = (String.valueOf(quantity_object));
+                                Object bungkus_object = map.get("bungkus");
+                                String bungkus_string = String.valueOf(bungkus_object);
+                                List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
+                                List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
+                                Log.i("Quantity", quantity_string);
+                                int i = 0;
+                                String item_quantity_combined = "";
+                                while (i<itemID_uncombined.size()) {
+                                    String item_container = itemID_uncombined.get(i);
+                                    String quantiy_container = quantity_uncombined.get(i);
+                                    if (i == itemID_uncombined.size() -1) {
+                                        item_quantity_combined += item_container + " (" + quantiy_container + ")";
                                     } else {
-                                        Log.i("Bug", "sudah tersaring");
+                                        item_quantity_combined += item_container + " (" + quantiy_container + ") , ";
                                     }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                    Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
-                                    Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
-                                    startActivity(refresh);//Start the same Activity
-                                    finish(); //finish Activity.
-
+                                    i++;
                                 }
+                                NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
+                                NewOrders.add(item_quantity_combined);
+                                NewQuantity.add(quantity_string);
+                                NewBungkusArrayList.add(bungkus_string);
+                                Log.i("Bungkus", "" + bungkus_string);
 
-                                Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
+                            } else {
+                                Log.i("Bug", "sudah tersaring");
                             }
-                            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList);
-                            recyclerView.setAdapter(recyclerAdapter);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
+                            Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
+                            startActivity(refresh);//Start the same Activity
+                            finish(); //finish Activity.
 
                         }
+
+                        Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
+
                     }
-                },000);
+                    recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList);
+                    recyclerView.setAdapter(recyclerAdapter);
 
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
+                } else {
+                    Log.e(TAG, "onEvent: query snapshot was null");
+                }
             }
         });
+
+
+
+//        Add Value Listener
+//        reff.addValueEventListener(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                new Handler().postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        Log.i("Hello", "hi");
+//                        if (dataSnapshot.exists()) {
+//
+//                            for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+//                                Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
+//                                Object customerNumber_object = map.get("customerNumber");
+//                                String customerNumber_string = (String.valueOf(customerNumber_object));
+//                                Log.i("Customer number:", customerNumber_string);
+//
+//                                try {
+//                                    int customerNumber_int = Integer.parseInt(customerNumber_string);
+//                                    if(!NewCustomerNumber.contains(customerNumber_int)) {
+//                                        Object pesanan_object = map.get("itemID");
+//                                        String pesanan_String = (String.valueOf(pesanan_object));
+//                                        Object quantity_object = map.get("quantity");
+//                                        String quantity_string = (String.valueOf(quantity_object));
+//                                        Object bungkus_object = map.get("bungkus");
+//                                        String bungkus_string = String.valueOf(bungkus_object);
+//                                        List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
+//                                        List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
+//                                        Log.i("Quantity", quantity_string);
+//                                        int i = 0;
+//                                        String item_quantity_combined = "";
+//                                        while (i<itemID_uncombined.size()) {
+//                                            String item_container = itemID_uncombined.get(i);
+//                                            String quantiy_container = quantity_uncombined.get(i);
+//                                            if (i == itemID_uncombined.size() -1) {
+//                                                item_quantity_combined += item_container + " (" + quantiy_container + ")";
+//                                            } else {
+//                                                item_quantity_combined += item_container + " (" + quantiy_container + ") , ";
+//                                            }
+//                                            i++;
+//                                        }
+//                                        NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
+//                                        NewOrders.add(item_quantity_combined);
+//                                        NewQuantity.add(quantity_string);
+//                                        NewBungkusArrayList.add(bungkus_string);
+//                                        Log.i("Bungkus", "" + bungkus_string);
+//
+//                                    } else {
+//                                        Log.i("Bug", "sudah tersaring");
+//                                    }
+//                                } catch (Exception e) {
+//                                    e.printStackTrace();
+//                                    Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
+//                                    Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
+//                                    startActivity(refresh);//Start the same Activity
+//                                    finish(); //finish Activity.
+//
+//                                }
+//
+//                                Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
+//                            }
+//                            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList);
+//                            recyclerView.setAdapter(recyclerAdapter);
+//
+//                        }
+//                    }
+//                },100);
+//
+//
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError error) {
+//
+//            }
+//        });
 
 //        reff.addValueEventListener(new ValueEventListener() {
 //            @Override
@@ -253,15 +328,23 @@ public class MainActivity extends AppCompatActivity {
                 String itemIDToBeRemoved = String.valueOf(NewOrders.get(position));
                 String quantityToBeRemoved = String.valueOf(NewQuantity.get(position));
                 reff.child(customerNumberToBeRemoved).removeValue();
-                Toast.makeText(getApplicationContext(), customerNumberToBeRemoved, Toast.LENGTH_SHORT).show();
+                fs.collection("Status").document(customerNumberToBeRemoved).update("status", "served").addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Toast.makeText(getApplicationContext(), customerNumberToBeRemoved, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            NewCustomerNumber.remove(position);
+            NewOrders.remove(position);
+            NewBungkusArrayList.remove(position);
+            recyclerAdapter.notifyDataSetChanged();
+
 //                reff.child(customerNumberToBeRemoved).child("status").setValue("Served");
 //                reff.child(customerNumberToBeRemoved).child("customerNumber").setValue(Integer.parseInt(customerNumberToBeRemoved));
 //                reff.child(customerNumberToBeRemoved).child("itemID").setValue(itemIDToBeRemoved);
 //                reff.child(customerNumberToBeRemoved).child("quantity").setValue(quantityToBeRemoved);
 //                query_udateStatus = reff.orderByChild("customerNumber").equalTo(NewCustomerNumber.get(position));
-                NewCustomerNumber.remove(position);
-                NewOrders.remove(position);
-                recyclerAdapter.notifyDataSetChanged();
+
 
         }
     };
