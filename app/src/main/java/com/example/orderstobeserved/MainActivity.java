@@ -328,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
                 String itemIDToBeRemoved = String.valueOf(NewOrders.get(position));
                 String quantityToBeRemoved = String.valueOf(NewQuantity.get(position));
                 reff.child(customerNumberToBeRemoved).removeValue();
-                fs.collection("Status").document(customerNumberToBeRemoved).update("status", "served").addOnSuccessListener(new OnSuccessListener<Void>() {
+                fs.collection("Status").document(customerNumberToBeRemoved).delete().addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
                         Toast.makeText(getApplicationContext(), customerNumberToBeRemoved, Toast.LENGTH_SHORT).show();
