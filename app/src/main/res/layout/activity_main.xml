@@ -22,6 +22,7 @@
                     android:layout_marginBottom="1dp"
                     android:layout_toStartOf="@+id/sidebar"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    android:background="@drawable/layout_bg"
 
 
                     />
@@ -33,7 +34,7 @@
                     android:layout_alignParentEnd="true"
                     android:elevation="30dp"
                     android:background="@drawable/layout_bg"
-                    android:backgroundTint="#CCD6D4"
+                    android:backgroundTint="#CCEDEDED"
                     android:padding="2dp">
 
                         <ImageButton
