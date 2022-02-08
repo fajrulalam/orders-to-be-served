@@ -23,7 +23,7 @@
         android:paddingBottom="20dp"
         android:paddingTop="20dp"
         android:text="100"
-        android:textColor="@color/white"
+        android:textColor="#E3E2E2"
         android:textAlignment="center"
         android:textSize="60dp"
         tools:ignore="TextContrastCheck" />

@@ -7,22 +7,88 @@
     tools:context=".MainActivity"
     android:background="#0D4C4C4C">
 
-
-
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginStart="1dp"
-            android:layout_marginTop="1dp"
-            android:layout_marginEnd="1dp"
-            android:layout_marginBottom="1dp"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_height="match_parent">
+
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="1dp"
+                    android:layout_marginTop="1dp"
+                    android:layout_marginEnd="1dp"
+                    android:layout_marginBottom="1dp"
+                    android:layout_toStartOf="@+id/sidebar"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+
+
+                    />
+
+                <RelativeLayout
+                    android:id="@+id/sidebar"
+                    android:layout_width="100dp"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentEnd="true"
+                    android:elevation="30dp"
+                    android:background="@drawable/layout_bg"
+                    android:backgroundTint="#CCD6D4"
+                    android:padding="2dp">
+
+                        <ImageButton
+                            android:id="@+id/mainMenuButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignBottom="@+id/backEndButton"
+                            android:layout_marginTop="0dp"
+                            android:layout_marginBottom="10dp"
+                            android:backgroundTint="#00695C"
+                            android:contentDescription="transaction"
+                            android:paddingHorizontal="40dp"
+                            android:paddingVertical="27dp"
+                            app:srcCompat="@drawable/ic_order" />
+
+                        <ImageButton
+                            android:id="@+id/backEndButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:backgroundTint="#ACACAC"
+                            android:contentDescription="inventory"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:layout_marginTop="100dp"/>
+
+                             />
+
+                        <ImageButton
+                            android:id="@+id/restartButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_alignTop="@+id/backEndButton"
+                            android:layout_marginTop="10dp"
+                            android:backgroundTint="#667A7A7A"
+                            android:contentDescription="inventory"
+                            android:paddingVertical="27dp"
+                            app:srcCompat="@drawable/ic_order_later" />
+
+
+
+
+
+                </RelativeLayout>
+
+
+
+
+        </RelativeLayout>
+
+
+
+
+
+
+
 
 
 

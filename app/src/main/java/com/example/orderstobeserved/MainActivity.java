@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         //Test Firestore
         fs = FirebaseFirestore.getInstance();
 
-        fs.collection("Status").whereEqualTo("status", "Serving").addSnapshotListener(new EventListener<QuerySnapshot>() {
+        fs.collection("Status").whereNotEqualTo("bungkus", "2").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
                 if (error !=null) {
