@@ -62,16 +62,46 @@
 
                              />
 
-                        <ImageButton
-                            android:id="@+id/restartButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                        <RelativeLayout
+                            android:id="@+id/halamanPesananButton"
+                            android:layout_width="87dp"
+                            android:layout_height="63dp"
                             android:layout_alignTop="@+id/backEndButton"
                             android:layout_marginTop="10dp"
+
                             android:backgroundTint="#667A7A7A"
                             android:contentDescription="inventory"
-                            android:paddingVertical="27dp"
-                            app:srcCompat="@drawable/ic_order_later" />
+
+                            android:background="@drawable/howmany_orders"
+                            android:layout_centerHorizontal="true"
+                            app:srcCompat="@drawable/ic_order_later" >
+
+                                <ImageView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_centerVertical="true"
+                                    android:layout_centerHorizontal="true"
+                                    android:src="@drawable/ic_order_later"
+                                    android:scaleY="1.1"
+                                    android:scaleX="1.1"></ImageView>
+
+                                <TextView
+                                    android:id="@+id/jumlahPesanan"
+                                    android:layout_width="30dp"
+                                    android:layout_height="20dp"
+                                    android:text="17"
+                                    android:layout_alignParentTop="true"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_marginRight="5dp"
+                                    android:layout_marginTop="5dp"
+                                    android:paddingRight="5dp"
+                                    android:textAlignment="center"
+                                    android:paddingLeft="5dp"
+                                    android:background="#EF0D0D"
+                                    android:fontFamily="@font/montserrat_bold"
+                                    android:textColor="@color/white"
+                                    android:visibility="gone"></TextView>
+                        </RelativeLayout>
 
 
 

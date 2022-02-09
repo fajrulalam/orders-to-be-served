@@ -10,6 +10,7 @@
     android:layout_marginRight="1dp"
     >
 
+
     <TextView
         android:id="@+id/noCustomerTextView"
         android:layout_width="140dp"
@@ -24,13 +25,12 @@
         android:paddingBottom="20dp"
         android:paddingTop="20dp"
         android:text="100"
-        android:textColor="#E3E2E2"
+        android:textColor="#FFFFFF"
         android:textAlignment="center"
         android:textSize="60dp"
         tools:ignore="TextContrastCheck" />
 
-    <TextView
-        android:id="@+id/pesananTextView"
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingLeft="10dp"
@@ -38,10 +38,46 @@
         android:paddingBottom="10dp"
         android:paddingRight="20dp"
         android:layout_marginLeft="20dp"
-        android:text="Pesanan"
-        android:textColor="#555454"
-        android:textSize="24dp"
-        android:fontFamily="@font/poppins_regular"/>
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/waktuPengambilanMerah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:textSize="14dp"
+            android:paddingLeft="10dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingRight="20dp"
+            android:layout_marginLeft="20dp"
+            android:textColor="#C62828"
+            android:visibility="gone"/>
+
+
+        <TextView
+            android:id="@+id/pesananTextView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="10dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:paddingRight="20dp"
+            android:layout_marginLeft="20dp"
+            android:text="Pesanan"
+            android:textColor="#555454"
+            android:textSize="24dp"
+            android:fontFamily="@font/poppins_regular"/>
+
+
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+
+
+
+
+
 
 
 
