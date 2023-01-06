@@ -23,7 +23,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.baoyz.swipemenulistview.SwipeMenuListView;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -50,7 +49,6 @@ import java.util.Timer;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private SwipeMenuListView swipeMenuListView;
     private ArrayList<Integer> mCustomerNumber;
     private ArrayList<String> mOrders;
     private ArrayList<String> mQuantity;
@@ -60,9 +58,11 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> NewQuantity;
     private ArrayList<String> NewBungkusArrayList;
     private ArrayList<String> NewWaktuPengambilan;
-//    private TextView totalHariIniTextView;
+
+    private ArrayList<NewPesanan> newPesananArrayList;
+    //    private TextView totalHariIniTextView;
     private DatabaseReference reff;
-//    private Query reffToday;
+    //    private Query reffToday;
     Query query;
     Query query2;
     MyAdapter adapter;
@@ -95,6 +95,8 @@ public class MainActivity extends AppCompatActivity {
         query2 = reff.child("status").equalTo("Serving");
 //        query.addListenerForSingleValueEvent(valueEventListener);
 
+        newPesananArrayList = new ArrayList<NewPesanan>();
+
         //Test Firestore
         fs = FirebaseFirestore.getInstance();
         halamanPesananButton = findViewById(R.id.halamanPesananButton);
@@ -103,54 +105,62 @@ public class MainActivity extends AppCompatActivity {
         fs.collection("Status").whereNotEqualTo("bungkus", 2).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
-                if (error !=null) {
+                if (error !=null) { 
                     Log.e(TAG, "onEvent", error);
                     return;
                 }
                 if (value != null){
                     List<DocumentSnapshot> snapshotList = value.getDocuments();
+                    newPesananArrayList.clear();
                     for (DocumentSnapshot snapshot : snapshotList) {
 
                         Map<String, Object> map = (Map<String, Object>) snapshot.getData();
                         Object customerNumber_object = map.get("customerNumber");
-                        String customerNumber_string = (String.valueOf(customerNumber_object));
-                        Log.i("Customer number:", customerNumber_string);
+                        int customerNumber_int;
+
+//                        Log.i("MAP UNCHECKED:", map.toString());
 
                         try {
-                            int customerNumber_int = Integer.parseInt(customerNumber_string);
-                            if(!NewCustomerNumber.contains(customerNumber_int)) {
-                                Object pesanan_object = map.get("itemID");
-                                String pesanan_String = (String.valueOf(pesanan_object));
-                                Object quantity_object = map.get("quantity");
-                                String quantity_string = (String.valueOf(quantity_object));
-                                Object bungkus_object = map.get("bungkus");
-                                String bungkus_string = String.valueOf(bungkus_object);
-                                Object waktuPengambilan_object = map.get("waktuPengambilan");
-                                String waktuPengambilan_string = String.valueOf(waktuPengambilan_object);
-                                List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
-                                List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
-                                Log.i("Quantity", quantity_string);
-                                int i = 0;
-                                String item_quantity_combined = "";
-                                while (i<itemID_uncombined.size()) {
-                                    String item_container = itemID_uncombined.get(i);
-                                    String quantiy_container = quantity_uncombined.get(i);
-                                    if (i == itemID_uncombined.size() -1) {
-                                        item_quantity_combined += item_container + " (" + quantiy_container + ")";
-                                    } else {
-                                        item_quantity_combined += item_container + " (" + quantiy_container + ") , ";
-                                    }
-                                    i++;
+                            customerNumber_int = Integer.parseInt(String.valueOf(customerNumber_object));
+//                            if(!NewCustomerNumber.contains(customerNumber_int)) {
+                            Object pesanan_object = map.get("itemID");
+                            String pesanan_String = (String.valueOf(pesanan_object));
+                            Object quantity_object = map.get("quantity");
+                            String quantity_string = (String.valueOf(quantity_object));
+                            Object bungkus_object = map.get("bungkus");
+                            String bungkus_string = String.valueOf(bungkus_object);
+                            int bungkus_int = Integer.parseInt(bungkus_string);
+                            Object waktuPengambilan_object = map.get("waktuPengambilan");
+                            String waktuPengambilan_string = String.valueOf(waktuPengambilan_object);
+                            List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
+                            List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
+                            Log.i("Quantity", quantity_string);
+                            int i = 0;
+                            String item_quantity_combined = "";
+                            while (i<itemID_uncombined.size()) {
+                                String item_container = itemID_uncombined.get(i);
+                                String quantiy_container = quantity_uncombined.get(i);
+                                if (i == itemID_uncombined.size() -1) {
+                                    item_quantity_combined += item_container + " (" + quantiy_container + ")";
+                                } else {
+                                    item_quantity_combined += item_container + " (" + quantiy_container + ") , ";
                                 }
-                                NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-                                NewOrders.add(item_quantity_combined);
-                                NewQuantity.add(quantity_string);
-                                NewBungkusArrayList.add(bungkus_string);
-                                NewWaktuPengambilan.add(waktuPengambilan_string);
-
-                            } else {
-                                Log.i("Bug", "sudah tersaring");
+                                i++;
                             }
+
+                            newPesananArrayList.add(
+                                    new NewPesanan(customerNumber_int, item_quantity_combined, bungkus_int, waktuPengambilan_string)
+                            );
+
+//                                NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
+//                                NewOrders.add(item_quantity_combined);
+//                                NewQuantity.add(quantity_string);
+//                                NewBungkusArrayList.add(bungkus_string);
+//                                NewWaktuPengambilan.add(waktuPengambilan_string);
+
+//                            } else {
+//                                Log.i("Bug", "sudah tersaring");
+//                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                             Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
@@ -163,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
 
                     }
-                    recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList, NewWaktuPengambilan);
+                    recyclerAdapter = new RecyclerAdapter(newPesananArrayList);
                     recyclerView.setAdapter(recyclerAdapter);
 
                 } else {
@@ -240,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(recyclerView);
 
         Log.i("CustomerNumber DH",  ""+ NewCustomerNumber.size());
-        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList, NewWaktuPengambilan);
+        recyclerAdapter = new RecyclerAdapter(newPesananArrayList);
         recyclerView.setAdapter(recyclerAdapter);
 
         halamanPesananButton.setOnClickListener(new View.OnClickListener() {
@@ -276,29 +286,26 @@ public class MainActivity extends AppCompatActivity {
 //                    NewCustomerNumber.remove(position);
 //                    NewOrders.remove(position);
 //                    recyclerAdapter.notifyDataSetChanged();
-                HashMap status_update = new HashMap();
-                status_update.put("status", "Served");
-                String customerNumberToBeRemoved = String.valueOf(NewCustomerNumber.get(position));
-                String itemIDToBeRemoved = String.valueOf(NewOrders.get(position));
-                String quantityToBeRemoved = String.valueOf(NewQuantity.get(position));
-                reff.child(customerNumberToBeRemoved).removeValue();
-                fs.collection("Status").document(customerNumberToBeRemoved).delete().addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        Toast.makeText(getApplicationContext(), customerNumberToBeRemoved, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            NewCustomerNumber.remove(position);
-            NewOrders.remove(position);
-            NewBungkusArrayList.remove(position);
-            NewWaktuPengambilan.remove(position);
+            HashMap status_update = new HashMap();
+            status_update.put("status", "Served");
+            String customerNumberToBeRemoved = String.valueOf(newPesananArrayList.get(position).customerNumber);
+//            String itemIDToBeRemoved = String.valueOf(NewOrders.get(position));
+//            String quantityToBeRemoved = String.valueOf(NewQuantity.get(position));
+//            reff.child(customerNumberToBeRemoved).removeValue();
+            fs.collection("Status").document(customerNumberToBeRemoved).delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    Toast.makeText(getApplicationContext(), customerNumberToBeRemoved, Toast.LENGTH_SHORT).show();
+                }
+            });
+            newPesananArrayList.remove(position);
+//            NewCustomerNumber.remove(position);
+//            NewOrders.remove(position);
+//            NewBungkusArrayList.remove(position);
+//            NewWaktuPengambilan.remove(position);
             recyclerAdapter.notifyDataSetChanged();
 
-//                reff.child(customerNumberToBeRemoved).child("status").setValue("Served");
-//                reff.child(customerNumberToBeRemoved).child("customerNumber").setValue(Integer.parseInt(customerNumberToBeRemoved));
-//                reff.child(customerNumberToBeRemoved).child("itemID").setValue(itemIDToBeRemoved);
-//                reff.child(customerNumberToBeRemoved).child("quantity").setValue(quantityToBeRemoved);
-//                query_udateStatus = reff.orderByChild("customerNumber").equalTo(NewCustomerNumber.get(position));
+
 
 
         }
@@ -345,89 +352,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//        ValueEventListener valueEventListener = new ValueEventListener() {
-//        @Override
-//        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//            new Handler().postDelayed(new Runnable() {
-//                @Override
-//                public void run() {
-//                    if (dataSnapshot.exists()) {
-//
-//                        //Get the raw data
-//                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-//                            Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
-//                            Object customerNumber_object = map.get("customerNumber");
-//                            String customerNumber_string = (String.valueOf(customerNumber_object));
-//                            Log.i("Customer number:", customerNumber_string);
-//                            int customerNumber_int = Integer.parseInt(customerNumber_string);
-//                            if(!NewCustomerNumber.contains(customerNumber_int)) {
-//                                Object pesanan_object = map.get("itemID");
-//                                String pesanan_String = (String.valueOf(pesanan_object));
-//
-//                                Object quantity_object = map.get("quantity");
-//                                String quantity_string = (String.valueOf(quantity_object));
-//
-//                                Object bungkus_object = map.get("bungkus");
-//                                String bungkus_string = String.valueOf(bungkus_object);
-//
-//                                Object waktuPengambilan = map.get("waktuPengambilan");
-//                                String waktuPengambilan_string = String.valueOf(bungkus_object);
-//
-//                                List<String> itemID_uncombined = Arrays.asList(pesanan_String.split("\\s*,\\s"));
-//                                List<String> quantity_uncombined = Arrays.asList(quantity_string.split("\\s*,\\s"));
-//                                Log.i("Quantity", quantity_string);
-//                                int i = 0;
-//                                String item_quantity_combined = "";
-//                                while (i<itemID_uncombined.size()) {
-//                                    String item_container = itemID_uncombined.get(i);
-//                                    String quantiy_container = quantity_uncombined.get(i);
-//                                    item_quantity_combined += item_container + "(" + quantiy_container + "), ";
-//                                    i++;
-//                                }
-//                                NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-//                                NewOrders.add(item_quantity_combined);
-//                                NewQuantity.add(quantity_string);
-//                                NewBungkusArrayList.add(bungkus_string);
-//
-//                            } else {
-//                                Log.i("Bug", "sudah tersaring");
-//                            }
-//                        }
-//
-//                        //Combining the item with the quantity
-//
-//                    }
-//                }
-//            }, 5000);
-//
-////            recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity);
-////            recyclerView.setAdapter(recyclerAdapter);
-//        }
-//
-//        @Override
-//        public void onCancelled(@NonNull DatabaseError error) {
-//
-//        }
-//    };
 
-//
-//    public void Refresh() {
-//        swipeRefreshLayout.setRefreshing(true);
-//
-//        NewCustomerNumber.clear();
-//        NewOrders.clear();
-//        query.addListenerForSingleValueEvent(valueEventListener);
-//        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList, NewWaktuPengambilan);
-//        recyclerView.setAdapter(recyclerAdapter);
-////        NewCustomerNumber.add(1);
-////        NewOrders.add("HALOO");
-//        recyclerView.setAdapter(recyclerAdapter);
-////        swipeMenuListView.setAdapter(adapter);
-////        recyclerAdapter.notifyDataSetChanged();
-//
-//
-//        swipeRefreshLayout.setRefreshing(false);
-//    }
 
 
 

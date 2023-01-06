@@ -17,18 +17,24 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     private static final String TAG = "RecycleAdapter";
     int count = 0;
 
-    ArrayList<Integer> NewCustomerNumber;
-    ArrayList<String> NewOrders;
-    ArrayList<String> NewQuantity;
-    ArrayList<String> NewBungkusArrayList;
-    ArrayList<String> NewWaktuPengambilan;
+//    ArrayList<Integer> NewCustomerNumber;
+//    ArrayList<String> NewOrders;
+//    ArrayList<String> NewQuantity;
+//    ArrayList<String> NewBungkusArrayList;
+//    ArrayList<String> NewWaktuPengambilan;
+//
+//    public RecyclerAdapter(ArrayList<Integer> newCustomerNumber, ArrayList<String> newOrders, ArrayList<String> NewQuantity, ArrayList<String> NewBungkusArrayList, ArrayList<String> NewWaktuPengambilan) {
+//        this.NewCustomerNumber = newCustomerNumber;
+//        this.NewOrders = newOrders;
+//        this.NewQuantity = NewQuantity;
+//        this.NewBungkusArrayList = NewBungkusArrayList;
+//        this.NewWaktuPengambilan =  NewWaktuPengambilan;
+//    }
 
-    public RecyclerAdapter(ArrayList<Integer> newCustomerNumber, ArrayList<String> newOrders, ArrayList<String> NewQuantity, ArrayList<String> NewBungkusArrayList, ArrayList<String> NewWaktuPengambilan) {
-        this.NewCustomerNumber = newCustomerNumber;
-        this.NewOrders = newOrders;
-        this.NewQuantity = NewQuantity;
-        this.NewBungkusArrayList = NewBungkusArrayList;
-        this.NewWaktuPengambilan =  NewWaktuPengambilan;
+    ArrayList<NewPesanan> newPesananArrayList;
+
+    public RecyclerAdapter(ArrayList<NewPesanan> newPesananArrayList) {
+        this.newPesananArrayList = newPesananArrayList;
     }
 
     @NonNull
@@ -44,27 +50,26 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        int bungkus = Integer.parseInt(NewBungkusArrayList.get(position));
+
+
+        int bungkus = (newPesananArrayList.get(position).bungkus_or_not);
         if (bungkus == 1 ) {
             holder.noCustomerTextView.setBackgroundColor(Color.parseColor("#F9A825"));
 
         } else if (bungkus == 2) {
             holder.noCustomerTextView.setBackgroundColor(Color.parseColor("#FFC62828"));
-            holder.waktuPengambilan.setText(NewWaktuPengambilan.get(position));
+            holder.waktuPengambilan.setText(newPesananArrayList.get(position).waktuPengambilan);
             holder.waktuPengambilan.setVisibility(View.VISIBLE);
 
         }
-            holder.pesananTextView.setText(String.valueOf(NewOrders.get(position)));
-            holder.noCustomerTextView.setText(String.valueOf(NewCustomerNumber.get(position)));
-
-
-
+            holder.pesananTextView.setText(String.valueOf(newPesananArrayList.get(position).rincianPesanan));
+            holder.noCustomerTextView.setText(String.valueOf(newPesananArrayList.get(position).customerNumber));
 
     }
 
     @Override
     public int getItemCount() {
-        return NewCustomerNumber.size();
+        return newPesananArrayList.size();
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {

@@ -21,7 +21,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.baoyz.swipemenulistview.SwipeMenuListView;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -45,7 +44,6 @@ import java.util.Map;
 public class Pesanan extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private SwipeMenuListView swipeMenuListView;
     private ArrayList<Integer> mCustomerNumber;
     private ArrayList<String> mOrders;
     private ArrayList<String> mQuantity;
@@ -155,7 +153,7 @@ public class Pesanan extends AppCompatActivity {
                         Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
 
                     }
-                    recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList, NewWaktuPengambilan);
+//                    recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList, NewWaktuPengambilan);
                     recyclerView.setAdapter(recyclerAdapter);
 
                 } else {
@@ -207,7 +205,7 @@ public class Pesanan extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(recyclerView);
 
         Log.i("CustomerNumber DH",  ""+ NewCustomerNumber.size());
-        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList, NewWaktuPengambilan);
+//        recyclerAdapter = new RecyclerAdapter(NewCustomerNumber, NewOrders, NewQuantity, NewBungkusArrayList, NewWaktuPengambilan);
         recyclerView.setAdapter(recyclerAdapter);
 
         mainMenuButton.setOnClickListener(new View.OnClickListener() {
