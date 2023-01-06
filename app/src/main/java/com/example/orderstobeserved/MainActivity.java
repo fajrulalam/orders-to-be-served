@@ -33,6 +33,7 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -49,29 +50,14 @@ import java.util.Timer;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private ArrayList<Integer> mCustomerNumber;
-    private ArrayList<String> mOrders;
-    private ArrayList<String> mQuantity;
 
-    private ArrayList<Integer> NewCustomerNumber;
-    private ArrayList<String> NewOrders;
-    private ArrayList<String> NewQuantity;
-    private ArrayList<String> NewBungkusArrayList;
-    private ArrayList<String> NewWaktuPengambilan;
 
     private ArrayList<NewPesanan> newPesananArrayList;
-    //    private TextView totalHariIniTextView;
-    private DatabaseReference reff;
-    //    private Query reffToday;
-    Query query;
-    Query query2;
-    MyAdapter adapter;
-    Query nestedQuery;
-    Query query_udateStatus;
 
     TextView jumlahPesanan;
 
     RelativeLayout halamanPesananButton;
+    ImageButton recentlyServedButton;
 
     RecyclerView recyclerView;
     RecyclerAdapter recyclerAdapter;
@@ -79,28 +65,26 @@ public class MainActivity extends AppCompatActivity {
     DividerItemDecoration dividerItemDecoration;
     ItemTouchHelper itemTouchHelper;
 
-    SwipeRefreshLayout swipeRefreshLayout;
 
     FirebaseFirestore fs;
-    Map<String, Object> pesanan = new HashMap<>();
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getSupportActionBar().hide();
-        reff = FirebaseDatabase.getInstance("https://point-of-sales-app-25e2b-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference("TransacationStatus");
-        query = reff.orderByChild("status").equalTo("Serving");
-        query2 = reff.child("status").equalTo("Serving");
-//        query.addListenerForSingleValueEvent(valueEventListener);
+//        getSupportActionBar().hide();
+
 
         newPesananArrayList = new ArrayList<NewPesanan>();
 
         //Test Firestore
         fs = FirebaseFirestore.getInstance();
         halamanPesananButton = findViewById(R.id.halamanPesananButton);
+        recentlyServedButton = findViewById(R.id.recentlyServed);
         jumlahPesanan = findViewById(R.id.jumlahPesanan);
+        recyclerView = findViewById(R.id.recyclerView);
+
 
         fs.collection("Status").whereNotEqualTo("bungkus", 2).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
@@ -152,15 +136,6 @@ public class MainActivity extends AppCompatActivity {
                                     new NewPesanan(customerNumber_int, item_quantity_combined, bungkus_int, waktuPengambilan_string)
                             );
 
-//                                NewCustomerNumber.add(Integer.parseInt(customerNumber_string));
-//                                NewOrders.add(item_quantity_combined);
-//                                NewQuantity.add(quantity_string);
-//                                NewBungkusArrayList.add(bungkus_string);
-//                                NewWaktuPengambilan.add(waktuPengambilan_string);
-
-//                            } else {
-//                                Log.i("Bug", "sudah tersaring");
-//                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                             Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
@@ -170,7 +145,6 @@ public class MainActivity extends AppCompatActivity {
 
                         }
 
-                        Log.i("CustomerNumber Size",  ""+ NewCustomerNumber.size());
 
                     }
                     recyclerAdapter = new RecyclerAdapter(newPesananArrayList);
@@ -210,37 +184,9 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        //Add data dummy
-        mCustomerNumber = new ArrayList<>();
-        mOrders = new ArrayList<>();
-        mQuantity = new ArrayList<>();
-
-        NewCustomerNumber = new ArrayList<>();
-        NewOrders = new ArrayList<>();
-        NewQuantity = new ArrayList<>();
-        NewBungkusArrayList = new ArrayList<>();
-        NewWaktuPengambilan = new ArrayList<>();
 
 
 
-        mCustomerNumber.add(1);
-        mCustomerNumber.add(2);
-        mCustomerNumber.add(3);
-
-        mOrders.add("Tes 1, Nasi Ayam, Bakso, Es Teh, Es jeruk");
-        mOrders.add("Siomay, Tes 2, Bakso, Es Teh, Es jeruk");
-        mOrders.add("Siomay, Nasi Ayam, Tes 3, Es Teh, Es jeruk");
-
-        mQuantity.add("2");
-        mQuantity.add("1");
-        mQuantity.add("4");
-
-        //SwipeMenuListView
-//        swipeMenuListView =  (SwipeMenuListView) findViewById(R.id.listView);
-
-//        adapter = new MyAdapter(this, mCustomerNumber, mOrders);
-//        swipeMenuListView.setAdapter(adapter);
-        recyclerView = findViewById(R.id.recyclerView);
         dividerItemDecoration = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
         dividerItemDecoration.setDrawable(getApplicationContext().getResources().getDrawable(R.drawable.line_divider));
         itemTouchHelper = new ItemTouchHelper(simpleCallback);
@@ -249,7 +195,6 @@ public class MainActivity extends AppCompatActivity {
 
         itemTouchHelper.attachToRecyclerView(recyclerView);
 
-        Log.i("CustomerNumber DH",  ""+ NewCustomerNumber.size());
         recyclerAdapter = new RecyclerAdapter(newPesananArrayList);
         recyclerView.setAdapter(recyclerAdapter);
 
@@ -257,6 +202,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 openBackEnd();
+            }
+        });
+
+        recentlyServedButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getApplicationContext(), RecentlyServedActivity.class);
+                startActivity(intent);
+                overridePendingTransition(0,0);
             }
         });
 
@@ -298,7 +252,17 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), customerNumberToBeRemoved, Toast.LENGTH_SHORT).show();
                 }
             });
+
+            RecentlyServed recentlyServed = new RecentlyServed(
+                    newPesananArrayList.get(position).customerNumber,
+                    newPesananArrayList.get(position).rincianPesanan,
+                    newPesananArrayList.get(position).bungkus_or_not,
+                    newPesananArrayList.get(position).waktuPengambilan,
+                    FieldValue.serverTimestamp()
+            );
+            fs.collection("RecentyServed").add(recentlyServed);
             newPesananArrayList.remove(position);
+
 //            NewCustomerNumber.remove(position);
 //            NewOrders.remove(position);
 //            NewBungkusArrayList.remove(position);
@@ -310,6 +274,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+
 
     public String getDate() {
         Long datetime = System.currentTimeMillis();
@@ -349,6 +314,63 @@ public class MainActivity extends AppCompatActivity {
 
             return row;
 
+        }
+    }
+
+
+    public class RecentlyServed {
+        int customerNumber;
+        String rincianPesanan;
+        int bungkus_or_not;
+        String waktuPengambilan;
+        FieldValue timestamp;
+
+        public RecentlyServed(int customerNumber, String rincianPesanan, int bungkus_or_not, String waktuPengambilan, FieldValue timestamp) {
+            this.customerNumber = customerNumber;
+            this.rincianPesanan = rincianPesanan;
+            this.bungkus_or_not = bungkus_or_not;
+            this.waktuPengambilan = waktuPengambilan;
+            this.timestamp = timestamp;
+        }
+
+        public int getCustomerNumber() {
+            return customerNumber;
+        }
+
+        public void setCustomerNumber(int customerNumber) {
+            this.customerNumber = customerNumber;
+        }
+
+        public String getRincianPesanan() {
+            return rincianPesanan;
+        }
+
+        public void setRincianPesanan(String rincianPesanan) {
+            this.rincianPesanan = rincianPesanan;
+        }
+
+        public int getBungkus_or_not() {
+            return bungkus_or_not;
+        }
+
+        public void setBungkus_or_not(int bungkus_or_not) {
+            this.bungkus_or_not = bungkus_or_not;
+        }
+
+        public String getWaktuPengambilan() {
+            return waktuPengambilan;
+        }
+
+        public void setWaktuPengambilan(String waktuPengambilan) {
+            this.waktuPengambilan = waktuPengambilan;
+        }
+
+        public FieldValue getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(FieldValue timestamp) {
+            this.timestamp = timestamp;
         }
     }
 

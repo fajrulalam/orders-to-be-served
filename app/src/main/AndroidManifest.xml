@@ -10,6 +10,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OrdersToBeServed">
         <activity
+            android:name=".RecentlyServedActivity"
+            android:exported="false" />
+        <activity
             android:name=".Pesanan"
             android:exported="false" />
         <activity

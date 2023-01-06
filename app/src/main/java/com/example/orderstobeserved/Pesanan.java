@@ -80,7 +80,7 @@ public class Pesanan extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pesanan);
-        getSupportActionBar().hide();
+//        getSupportActionBar().hide();
         reff = FirebaseDatabase.getInstance("https://point-of-sales-app-25e2b-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference("TransacationStatus");
         query = reff.orderByChild("status").equalTo("Serving");
         query2 = reff.child("status").equalTo("Serving");
