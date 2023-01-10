@@ -29,13 +29,13 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.sql.Ref;
@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
 
 
-        fs.collection("Status").whereNotEqualTo("bungkus", 2).addSnapshotListener(new EventListener<QuerySnapshot>() {
+        fs.collection("Status").orderBy("waktuPesan", Query.Direction.ASCENDING).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
                 if (error !=null) { 
@@ -104,9 +104,10 @@ public class MainActivity extends AppCompatActivity {
 
 //                        Log.i("MAP UNCHECKED:", map.toString());
 
-                        try {
+//                        try {
+                        int bungkus = Integer.parseInt(String.valueOf(map.get("bungkus")));
+                        if (bungkus != 2) {
                             customerNumber_int = Integer.parseInt(String.valueOf(customerNumber_object));
-//                            if(!NewCustomerNumber.contains(customerNumber_int)) {
                             Object pesanan_object = map.get("itemID");
                             String pesanan_String = (String.valueOf(pesanan_object));
                             Object quantity_object = map.get("quantity");
@@ -121,6 +122,8 @@ public class MainActivity extends AppCompatActivity {
                             Log.i("Quantity", quantity_string);
                             int i = 0;
                             String item_quantity_combined = "";
+                            String waktuPesan = map.get("waktuPesan").toString();
+                            Log.i("WaktuPesan", waktuPesan);
                             while (i<itemID_uncombined.size()) {
                                 String item_container = itemID_uncombined.get(i);
                                 String quantiy_container = quantity_uncombined.get(i);
@@ -133,22 +136,25 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                             newPesananArrayList.add(
-                                    new NewPesanan(customerNumber_int, item_quantity_combined, bungkus_int, waktuPengambilan_string)
+                                    new NewPesanan(customerNumber_int, item_quantity_combined, bungkus_int, waktuPengambilan_string, waktuPesan,"")
                             );
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
-                            Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
-                            startActivity(refresh);//Start the same Activity
-                            finish(); //finish Activity.
-
                         }
 
 
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                            Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
+//                            Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
+//                            startActivity(refresh);//Start the same Activity
+//                            finish(); //finish Activity.
+//
+//                        }
+
+
                     }
-                    recyclerAdapter = new RecyclerAdapter(newPesananArrayList);
-                    recyclerView.setAdapter(recyclerAdapter);
+//                    recyclerAdapter = new RecyclerAdapter(newPesananArrayList);
+//                    recyclerView.setAdapter(recyclerAdapter);
+                    recyclerAdapter.notifyDataSetChanged();
 
                 } else {
                     Log.e(TAG, "onEvent: query snapshot was null");
@@ -237,15 +243,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
             int position = viewHolder.getAdapterPosition();
-//                    NewCustomerNumber.remove(position);
-//                    NewOrders.remove(position);
-//                    recyclerAdapter.notifyDataSetChanged();
+
             HashMap status_update = new HashMap();
             status_update.put("status", "Served");
             String customerNumberToBeRemoved = String.valueOf(newPesananArrayList.get(position).customerNumber);
-//            String itemIDToBeRemoved = String.valueOf(NewOrders.get(position));
-//            String quantityToBeRemoved = String.valueOf(NewQuantity.get(position));
-//            reff.child(customerNumberToBeRemoved).removeValue();
+
             fs.collection("Status").document(customerNumberToBeRemoved).delete().addOnSuccessListener(new OnSuccessListener<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
@@ -258,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
                     newPesananArrayList.get(position).rincianPesanan,
                     newPesananArrayList.get(position).bungkus_or_not,
                     newPesananArrayList.get(position).waktuPengambilan,
+                    newPesananArrayList.get(position).waktuPesan,
                     FieldValue.serverTimestamp()
             );
             fs.collection("RecentyServed").add(recentlyServed);
@@ -323,14 +326,16 @@ public class MainActivity extends AppCompatActivity {
         String rincianPesanan;
         int bungkus_or_not;
         String waktuPengambilan;
-        FieldValue timestamp;
+        String waktuPesan;
+        FieldValue timestampServe;
 
-        public RecentlyServed(int customerNumber, String rincianPesanan, int bungkus_or_not, String waktuPengambilan, FieldValue timestamp) {
+        public RecentlyServed(int customerNumber, String rincianPesanan, int bungkus_or_not, String waktuPengambilan, String waktuPesan, FieldValue timestampServe) {
             this.customerNumber = customerNumber;
             this.rincianPesanan = rincianPesanan;
             this.bungkus_or_not = bungkus_or_not;
             this.waktuPengambilan = waktuPengambilan;
-            this.timestamp = timestamp;
+            this.waktuPesan = waktuPesan;
+            this.timestampServe = timestampServe;
         }
 
         public int getCustomerNumber() {
@@ -365,12 +370,21 @@ public class MainActivity extends AppCompatActivity {
             this.waktuPengambilan = waktuPengambilan;
         }
 
-        public FieldValue getTimestamp() {
-            return timestamp;
+
+        public String getWaktuPesan() {
+            return waktuPesan;
         }
 
-        public void setTimestamp(FieldValue timestamp) {
-            this.timestamp = timestamp;
+        public void setWaktuPesan(String waktuPesan) {
+            this.waktuPesan = waktuPesan;
+        }
+
+        public FieldValue getTimestampServe() {
+            return timestampServe;
+        }
+
+        public void setTimestampServe(FieldValue timestampServe) {
+            this.timestampServe = timestampServe;
         }
     }
 

@@ -20,6 +20,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
@@ -63,7 +64,7 @@ public class RecentlyServedActivity extends AppCompatActivity {
         jumlahPesanan = findViewById(R.id.jumlahPesanan);
         recyclerView = findViewById(R.id.recyclerView);
 
-        fs.collection("RecentyServed").limit(10).orderBy("timestamp").addSnapshotListener(new EventListener<QuerySnapshot>() {
+        fs.collection("RecentyServed").limit(10).orderBy("timestampServe", Query.Direction.DESCENDING).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
                 if (error !=null) {
@@ -94,10 +95,12 @@ public class RecentlyServedActivity extends AppCompatActivity {
                             String waktuPengambilan_string = String.valueOf(waktuPengambilan_object);
                             Log.i("Quantity", quantity_string);
                             int i = 0;
+                            String waktuPesan = map.get("waktuPesan").toString();
+                            String waktuServe = map.get("timestampServe").toString();
 
 
                             newPesananArrayList.add(
-                                    new NewPesanan(customerNumber_int, pesanan_String, bungkus_int, waktuPengambilan_string)
+                                    new NewPesanan(customerNumber_int, pesanan_String, bungkus_int, waktuPengambilan_string, waktuPesan, waktuServe)
                             );
 
                         } catch (Exception e) {

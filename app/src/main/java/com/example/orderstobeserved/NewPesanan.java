@@ -5,12 +5,16 @@ public class NewPesanan {
     String rincianPesanan;
     int bungkus_or_not;
     String waktuPengambilan;
+    String waktuPesan;
+    String waktuServe;
 
-    public NewPesanan(int customerNumber, String rincianPesanan, int bungkus_or_not, String waktuPengambilan) {
+    public NewPesanan(int customerNumber, String rincianPesanan, int bungkus_or_not, String waktuPengambilan, String waktuPesan, String waktuServe) {
         this.customerNumber = customerNumber;
         this.rincianPesanan = rincianPesanan;
         this.bungkus_or_not = bungkus_or_not;
         this.waktuPengambilan = waktuPengambilan;
+        this.waktuPesan = waktuPesan;
+        this.waktuServe = waktuServe;
     }
 
 
