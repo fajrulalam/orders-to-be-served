@@ -134,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 i++;
                             }
+                            Log.i("Bungkus_int", ""+bungkus_int);
 
                             newPesananArrayList.add(
                                     new NewPesanan(customerNumber_int, item_quantity_combined, bungkus_int, waktuPengambilan_string, waktuPesan,"")
@@ -141,19 +142,10 @@ public class MainActivity extends AppCompatActivity {
                         }
 
 
-//                        } catch (Exception e) {
-//                            e.printStackTrace();
-//                            Toast.makeText(getApplicationContext(), "Refreshing...", Toast.LENGTH_SHORT).show();
-//                            Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
-//                            startActivity(refresh);//Start the same Activity
-//                            finish(); //finish Activity.
-//
-//                        }
 
 
                     }
-//                    recyclerAdapter = new RecyclerAdapter(newPesananArrayList);
-//                    recyclerView.setAdapter(recyclerAdapter);
+
                     recyclerAdapter.notifyDataSetChanged();
 
                 } else {

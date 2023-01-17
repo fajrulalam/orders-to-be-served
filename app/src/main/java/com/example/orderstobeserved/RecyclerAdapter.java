@@ -17,20 +17,6 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     private static final String TAG = "RecycleAdapter";
     int count = 0;
 
-//    ArrayList<Integer> NewCustomerNumber;
-//    ArrayList<String> NewOrders;
-//    ArrayList<String> NewQuantity;
-//    ArrayList<String> NewBungkusArrayList;
-//    ArrayList<String> NewWaktuPengambilan;
-//
-//    public RecyclerAdapter(ArrayList<Integer> newCustomerNumber, ArrayList<String> newOrders, ArrayList<String> NewQuantity, ArrayList<String> NewBungkusArrayList, ArrayList<String> NewWaktuPengambilan) {
-//        this.NewCustomerNumber = newCustomerNumber;
-//        this.NewOrders = newOrders;
-//        this.NewQuantity = NewQuantity;
-//        this.NewBungkusArrayList = NewBungkusArrayList;
-//        this.NewWaktuPengambilan =  NewWaktuPengambilan;
-//    }
-
     ArrayList<NewPesanan> newPesananArrayList;
 
     public RecyclerAdapter(ArrayList<NewPesanan> newPesananArrayList) {
@@ -50,6 +36,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        holder.setIsRecyclable(false);
 
 
         int bungkus = (newPesananArrayList.get(position).bungkus_or_not);
@@ -64,6 +51,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         }
             holder.pesananTextView.setText(String.valueOf(newPesananArrayList.get(position).rincianPesanan));
             holder.noCustomerTextView.setText(String.valueOf(newPesananArrayList.get(position).customerNumber));
+
 
     }
 
