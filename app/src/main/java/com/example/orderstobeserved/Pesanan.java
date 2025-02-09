@@ -58,7 +58,7 @@ public class Pesanan extends AppCompatActivity {
     //    private Query reffToday;
     Query query;
     Query query2;
-    MainActivity.MyAdapter adapter;
+//    MainActivity.MyAdapter adapter;
     Query nestedQuery;
     Query query_udateStatus;
 
@@ -300,12 +300,13 @@ public class Pesanan extends AppCompatActivity {
             LayoutInflater layoutInflater = (LayoutInflater) getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View row = layoutInflater.inflate(R.layout.orders_to_be_served, parent, false);
             TextView noCustomerTextView = (TextView) row.findViewById(R.id.noCustomerTextView);
-            TextView pesananTextView = (TextView) row.findViewById(R.id.pesananTextView);
+//            TextView pesananTextView = (TextView) row.findViewById(R.id.pesananTextView);
 
             noCustomerTextView.setText("" +rCustomerNumber.get(position));
-            pesananTextView.setText("" +rOrders.get(position));
+//            pesananTextView.setText("" +rOrders.get(position));
 
             return row;
+
 
         }
     }

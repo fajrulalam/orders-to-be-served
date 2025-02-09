@@ -3,14 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
     android:layout_width="match_parent"
-    android:layout_height="130dp"
+    android:layout_height="wrap_content"
     android:background="@color/white"
     android:layout_marginTop="2dp"
     android:layout_marginBottom="2dp"
-    android:layout_marginRight="1dp"
-    >
+    android:layout_marginRight="1dp">
 
-
+    <!-- Customer Number / Order ID -->
     <TextView
         android:id="@+id/noCustomerTextView"
         android:layout_width="140dp"
@@ -20,66 +19,134 @@
         android:layout_marginBottom="2dp"
         android:background="#FF1565C0"
         android:fontFamily="@font/montserrat_bold"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
-        android:paddingBottom="20dp"
-        android:paddingTop="20dp"
+        android:padding="20dp"
         android:text="100"
         android:textColor="#FFFFFF"
         android:textAlignment="center"
-        android:textSize="60dp"
+        android:textSize="50dp"
         tools:ignore="TextContrastCheck" />
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <!-- Container for dynamic order item buttons -->
+    <LinearLayout
+        android:id="@+id/orderItemsContainer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:paddingLeft="10dp"
         android:paddingTop="10dp"
-        android:paddingBottom="10dp"
         android:paddingRight="20dp"
-        android:layout_marginLeft="20dp"
-        android:orientation="vertical">
+        android:layout_marginLeft="20dp">
+        <!-- Order item buttons will be added here -->
+    </LinearLayout>
 
-        <TextView
-            android:id="@+id/waktuPengambilanMerah"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="00:00"
-            android:textSize="14dp"
-            android:paddingLeft="10dp"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp"
-            android:paddingRight="20dp"
-            android:layout_marginLeft="20dp"
-            android:textColor="#C62828"
-            android:visibility="gone"/>
-
-
-        <TextView
-            android:id="@+id/pesananTextView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingLeft="10dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:paddingRight="20dp"
-            android:layout_marginLeft="20dp"
-            android:text="Pesanan"
-            android:textColor="#555454"
-            android:textSize="24dp"
-            android:fontFamily="@font/poppins_regular"/>
-
-
-
-    </androidx.appcompat.widget.LinearLayoutCompat>
-
-
-
-
-
-
-
-
-
+    <!-- (Optional) A TextView for showing waktuPengambilan -->
+    <TextView
+        android:id="@+id/waktuPengambilanMerah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:textColor="#C62828"
+        android:textSize="14dp"
+        android:padding="5dp" />
 
 </LinearLayout>
+
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    xmlns:tools="http://schemas.android.com/tools"-->
+<!--    android:orientation="horizontal"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="130dp"-->
+<!--    android:background="@color/white"-->
+<!--    android:layout_marginTop="2dp"-->
+<!--    android:layout_marginBottom="2dp"-->
+<!--    android:layout_marginRight="1dp"-->
+<!--    >-->
+
+
+<!--    <TextView-->
+<!--        android:id="@+id/noCustomerTextView"-->
+<!--        android:layout_width="140dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginLeft="5dp"-->
+<!--        android:layout_marginTop="2dp"-->
+<!--        android:layout_marginBottom="2dp"-->
+<!--        android:background="#FF1565C0"-->
+<!--        android:fontFamily="@font/montserrat_bold"-->
+<!--        android:paddingLeft="10dp"-->
+<!--        android:paddingRight="10dp"-->
+<!--        android:paddingBottom="20dp"-->
+<!--        android:paddingTop="20dp"-->
+<!--        android:text="100"-->
+<!--        android:textColor="#FFFFFF"-->
+<!--        android:textAlignment="center"-->
+<!--        android:textSize="60dp"-->
+<!--        tools:ignore="TextContrastCheck" />-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/orderItemsContainer"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="vertical"-->
+<!--        android:paddingLeft="10dp"-->
+<!--        android:paddingTop="10dp"-->
+<!--        android:paddingRight="20dp"-->
+<!--        android:layout_marginLeft="20dp">-->
+<!--        &lt;!&ndash; Buttons will be added dynamically &ndash;&gt;-->
+<!--    </LinearLayout>-->
+
+<!--&lt;!&ndash;    <androidx.appcompat.widget.LinearLayoutCompat&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_height="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:paddingLeft="10dp"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:paddingTop="10dp"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:paddingBottom="10dp"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:paddingRight="20dp"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_marginLeft="20dp"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:orientation="vertical">&ndash;&gt;-->
+
+<!--&lt;!&ndash;        <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;            android:id="@+id/waktuPengambilanMerah"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:text="00:00"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:textSize="14dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:paddingLeft="10dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:paddingTop="5dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:paddingBottom="5dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:paddingRight="20dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_marginLeft="20dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:textColor="#C62828"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:visibility="gone"/>&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;&lt;!&ndash;        <TextView&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:id="@+id/pesananTextView"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:layout_height="match_parent"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:paddingLeft="10dp"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:paddingTop="10dp"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:paddingBottom="10dp"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:paddingRight="20dp"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:layout_marginLeft="20dp"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:text="Pesanan"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:textColor="#555454"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:textSize="24dp"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            android:fontFamily="@font/poppins_regular"/>&ndash;&gt;&ndash;&gt;-->
+
+
+
+<!--&lt;!&ndash;    </androidx.appcompat.widget.LinearLayoutCompat>&ndash;&gt;-->
+
+
+
+
+
+
+
+
+
+
+<!--</LinearLayout>-->
