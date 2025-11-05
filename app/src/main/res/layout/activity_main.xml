@@ -9,114 +9,128 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@drawable/main_background">
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
+        <!-- Aggregation Section (Left Sidebar) -->
+        <LinearLayout
+            android:id="@+id/aggregationSection"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:elevation="4dp"
+            android:visibility="visible">
+
+            <!-- Apple-style Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="20dp"
+                android:background="#FFFFFF">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Rekap Pesanan"
+                    android:textSize="34sp"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    android:layout_centerVertical="true"
+                    android:fontFamily="sans-serif-light"
+                    android:letterSpacing="-0.02" />
+
+                <!-- Minimal Close Button -->
+                <ImageButton
+                    android:id="@+id/toggleAggregationButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Hide Summary"
+                    android:padding="6dp"
+                    android:scaleType="fitCenter"
+                    android:tint="#8E8E93"
+                    app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
+
+            </RelativeLayout>
+
+            <!-- Subtle divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:background="#E5E5EA" />
+
+            <!-- Aggregated Items RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/aggregationRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:clipToPadding="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        </LinearLayout>
+
+        <!-- Floating Action Button to Show Aggregation (appears when hidden) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/showAggregationFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="24dp"
+            android:contentDescription="Show Summary"
+            android:visibility="gone"
+            app:backgroundTint="#4CAF50"
+            app:tint="@android:color/white"
+            app:srcCompat="@android:drawable/ic_menu_info_details"
+            app:elevation="8dp" />
+
+        <!-- Main Orders RecyclerView (Full Width) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="1dp"
-            android:layout_marginTop="1dp"
-            android:layout_marginEnd="1dp"
-            android:layout_marginBottom="1dp"
-            android:layout_toStartOf="@+id/sidebar"
-            android:background="@drawable/layout_bg"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="4dp"
+            android:layout_marginBottom="16dp"
+            android:layout_toEndOf="@+id/aggregationSection"
+            android:background="@android:color/transparent"
+            android:clipToPadding="false"
+            android:paddingTop="4dp"
+            android:paddingBottom="80dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-            />
-
-        <RelativeLayout
-            android:id="@+id/sidebar"
-            android:layout_width="100dp"
-            android:layout_height="match_parent"
+        <!-- Single Toggle FAB (Bottom Right) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/toggleActivityFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:elevation="30dp"
-            android:background="@drawable/layout_bg"
-            android:backgroundTint="#CCEDEDED"
-            android:padding="2dp">
+            android:layout_alignParentBottom="true"
+            android:layout_margin="20dp"
+            android:contentDescription="Recently Served"
+            app:backgroundTint="#007AFF"
+            app:tint="@android:color/white"
+            app:srcCompat="@drawable/ic_baseline_history_24"
+            app:elevation="8dp"
+            app:fabSize="normal" />
 
-            <ImageButton
-                android:id="@+id/mainMenuButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignBottom="@+id/backEndButton"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="10dp"
-                android:backgroundTint="#00695C"
-                android:contentDescription="transaction"
-                android:paddingHorizontal="40dp"
-                android:paddingVertical="27dp"
-                app:srcCompat="@drawable/ic_order" />
-
-            <ImageButton
-                android:id="@+id/backEndButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="#ACACAC"
-                android:contentDescription="inventory"
-                android:paddingTop="0dp"
-                android:paddingBottom="0dp"
-                android:layout_marginTop="100dp"/>
-
-            />
-
-            <RelativeLayout
-                android:id="@+id/halamanPesananButton"
-                android:layout_width="87dp"
-                android:layout_height="63dp"
-                android:layout_alignTop="@+id/backEndButton"
-                android:layout_centerHorizontal="true"
-
-                android:layout_marginTop="10dp"
-                android:background="@drawable/howmany_orders"
-
-                android:backgroundTint="#667A7A7A"
-                android:contentDescription="inventory"
-                app:srcCompat="@drawable/ic_order_later">
-
-                <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerHorizontal="true"
-                    android:layout_centerVertical="true"
-                    android:scaleX="1.1"
-                    android:scaleY="1.1"
-                    android:src="@drawable/ic_order_later"></ImageView>
-
-                <TextView
-                    android:id="@+id/jumlahPesanan"
-                    android:layout_width="30dp"
-                    android:layout_height="20dp"
-                    android:layout_alignParentTop="true"
-                    android:layout_alignParentEnd="true"
-                    android:layout_marginTop="5dp"
-                    android:layout_marginRight="5dp"
-                    android:background="#EF0D0D"
-                    android:fontFamily="@font/montserrat_bold"
-                    android:paddingLeft="5dp"
-                    android:paddingRight="5dp"
-                    android:text="17"
-                    android:textAlignment="center"
-                    android:textColor="@color/white"
-                    android:visibility="gone"></TextView>
-            </RelativeLayout>
-
-            <ImageButton
-                android:id="@+id/recentlyServed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignTop="@id/backEndButton"
-                android:layout_marginTop="100dp"
-                android:backgroundTint="#667A7A7A"
-                android:contentDescription="transaction"
-                android:paddingHorizontal="40dp"
-                android:paddingVertical="27dp"
-                app:srcCompat="@drawable/ic_baseline_history_24" />
-
-        </RelativeLayout>
+        <!-- Badge for order count (hidden by default) -->
+        <TextView
+            android:id="@+id/jumlahPesanan"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
     </RelativeLayout>
 

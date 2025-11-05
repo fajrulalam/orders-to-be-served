@@ -1,43 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:flexbox="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/orderBlockContainer"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:background="@android:color/white">
+    android:layout_margin="8dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="8dp"
+    android:elevation="8dp">
 
-    <!-- Header: Order Number and Customer Name -->
     <LinearLayout
-        android:id="@+id/headerContainer"
+        android:id="@+id/orderBlockContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="4dp"
-        android:background="#EEEEEE">
+        android:orientation="vertical"
+        android:background="@drawable/order_card_bg">
 
-        <TextView
-            android:id="@+id/headerTextView"
-            android:layout_width="wrap_content"
+        <!-- Compact Header: Customer Info + Timer -->
+        <RelativeLayout
+            android:id="@+id/headerContainer"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="25 (Nama Pelanggan)"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:ellipsize="end"
-            android:singleLine="true" />
+            android:padding="12dp"
+            android:background="@drawable/order_card_bg">
+
+            <!-- Customer Info (smaller) -->
+            <TextView
+                android:id="@+id/headerTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="25 (Customer)"
+                android:textSize="14sp"
+                android:textColor="#424242"
+                android:fontFamily="sans-serif"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Hidden order time (not displayed) -->
+            <TextView
+                android:id="@+id/orderTimeTextView"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
+
+            <!-- Count up timer only (softer red) -->
+            <TextView
+                android:id="@+id/servingTimeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="05:30"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#EF9A9A"
+                android:fontFamily="sans-serif" />
+
+        </RelativeLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp" />
+
+        <!-- FlexboxLayout for Order Items: items append horizontally and wrap when needed -->
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/itemsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            flexbox:flexWrap="wrap"
+            flexbox:justifyContent="flex_start"
+            android:padding="12dp">
+            <!-- Order item buttons will be added dynamically -->
+        </com.google.android.flexbox.FlexboxLayout>
+
     </LinearLayout>
 
-    <!-- FlexboxLayout for Order Items: items append horizontally and wrap when needed -->
-    <com.google.android.flexbox.FlexboxLayout
-        android:id="@+id/itemsContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        flexbox:flexWrap="wrap"
-        flexbox:justifyContent="flex_start"
-        android:padding="4dp">
-        <!-- Order item buttons will be added dynamically -->
-    </com.google.android.flexbox.FlexboxLayout>
-
-</LinearLayout>
+</androidx.cardview.widget.CardView>
