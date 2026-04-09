@@ -14,6 +14,14 @@ public class OrderBlock {
     private long orderTimestamp; // Unix timestamp in milliseconds for count-up timer
 
     private int total;
+    private String transactionMethod; // e.g. "Open Bill"
+    private String paymentMethod;
+    private boolean isClosed = true;  // default true (non-open-bill orders are always closeable)
+    private String customerPhone;
+    private boolean isMember;
+    private String memberId;
+    private String canteenId;
+    private String firestoreDocumentId; // The actual Firestore document ID (not customerNumber)
 
     // Constructor without servingTime (for pending orders)
     public OrderBlock(int bungkus, int customerNumber, String namaCustomer,
@@ -24,8 +32,8 @@ public class OrderBlock {
         this.orderItems = orderItems;
         this.waktuPengambilan = waktuPengambilan;
         this.waktuPesan = waktuPesan;
-        this.servingTime = "..."; // Default value
-        this.orderTimestamp = 0; // Default, should be set later
+        this.servingTime = "...";
+        this.orderTimestamp = 0;
     }
 
     // Constructor with servingTime (for served orders)
@@ -39,7 +47,7 @@ public class OrderBlock {
         this.waktuPengambilan = waktuPengambilan;
         this.waktuPesan = waktuPesan;
         this.servingTime = servingTime;
-        this.orderTimestamp = 0; // Default, should be set later
+        this.orderTimestamp = 0;
     }
 
     // Constructor with timestamp (for count-up timer in pending orders)
@@ -52,7 +60,7 @@ public class OrderBlock {
         this.orderItems = orderItems;
         this.waktuPengambilan = waktuPengambilan;
         this.waktuPesan = waktuPesan;
-        this.servingTime = "..."; // Default value
+        this.servingTime = "...";
         this.orderTimestamp = orderTimestamp;
         this.total = total;
     }
@@ -128,6 +136,74 @@ public class OrderBlock {
 
     public void setOrderTimestamp(long orderTimestamp) {
         this.orderTimestamp = orderTimestamp;
+    }
+
+    public String getTransactionMethod() {
+        return transactionMethod;
+    }
+
+    public void setTransactionMethod(String transactionMethod) {
+        this.transactionMethod = transactionMethod;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public boolean isClosed() {
+        return isClosed;
+    }
+
+    public void setClosed(boolean closed) {
+        isClosed = closed;
+    }
+
+    public boolean isOpenBill() {
+        return "Open Bill".equalsIgnoreCase(transactionMethod);
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
+    public boolean isMember() {
+        return isMember;
+    }
+
+    public void setMember(boolean member) {
+        isMember = member;
+    }
+
+    public String getMemberId() {
+        return memberId;
+    }
+
+    public void setMemberId(String memberId) {
+        this.memberId = memberId;
+    }
+
+    public String getCanteenId() {
+        return canteenId;
+    }
+
+    public void setCanteenId(String canteenId) {
+        this.canteenId = canteenId;
+    }
+
+    public String getFirestoreDocumentId() {
+        return firestoreDocumentId;
+    }
+
+    public void setFirestoreDocumentId(String firestoreDocumentId) {
+        this.firestoreDocumentId = firestoreDocumentId;
     }
 
     // Get elapsed time since order was placed in a formatted string (mm:ss)

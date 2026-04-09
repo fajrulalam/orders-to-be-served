@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -75,6 +76,12 @@ public class RecentlyServedActivity extends AppCompatActivity {
         recyclerAdapter = new RecyclerAdapter2(RecentlyServedActivity.this, orderBlockArrayList);
         recyclerView.setAdapter(recyclerAdapter);
 
+        // Show testing mode banner if active
+        SharedPreferences prefs = getSharedPreferences("shared_prefs", MODE_PRIVATE);
+        TextView testModeBanner = findViewById(R.id.testModeBanner);
+        testModeBanner.setVisibility(
+                TestingModeManager.isEnabled(prefs) ? View.VISIBLE : View.GONE);
+
         // Fetch recently served orders
         fetchRecentlyServed();
 
@@ -87,7 +94,9 @@ public class RecentlyServedActivity extends AppCompatActivity {
     }
     
     private void fetchRecentlyServed() {
-        fs.collection("RecentlyServed").orderBy("timestampServe", Query.Direction.DESCENDING).limit(50).addSnapshotListener(new EventListener<QuerySnapshot>() {
+        SharedPreferences prefs = getSharedPreferences("shared_prefs", MODE_PRIVATE);
+        fs.collection(TestingModeManager.col(prefs, "RecentlyServed"))
+                .orderBy("timestampServe", Query.Direction.DESCENDING).limit(50).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
@@ -158,7 +167,8 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                             namaPesanan,
                                             orderType,
                                             quantity,
-                                            status
+                                            status,
+                                            null
                                         );
                                         orderItem.setPreparedQuantity(preparedQuantity);
                                         orderItems.add(orderItem);
@@ -180,19 +190,21 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                                 namaPesanan,
                                                 "dine-in",
                                                 dineInQuantity,
-                                                "completed"
+                                                "completed",
+                                                null
                                             );
                                             orderItem.setPreparedQuantity(dineInQuantity); // Mark as fully served
                                             orderItems.add(orderItem);
                                         }
-                                        
+
                                         // Create take-away order item if quantity > 0
                                         if (takeAwayQuantity > 0) {
                                             NewOrderItem orderItem = new NewOrderItem(
                                                 namaPesanan,
                                                 "take-away",
                                                 takeAwayQuantity,
-                                                "completed"
+                                                "completed",
+                                                null
                                             );
                                             orderItem.setPreparedQuantity(takeAwayQuantity); // Mark as fully served
                                             orderItems.add(orderItem);
@@ -206,7 +218,8 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                     rincianPesanan,
                                     bungkus == 1 ? "take-away" : "dine-in",
                                     1,
-                                    "completed"
+                                    "completed",
+                                    null
                                 );
                                 orderItem.setPreparedQuantity(1); // Mark as served
                                 orderItems.add(orderItem);

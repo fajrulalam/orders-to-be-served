@@ -8,16 +8,20 @@ public class AggregatedItem {
     private String orderType; // "dine-in" or "take-away"
     private int totalQuantity;
     private int servedQuantity;
-    
+    private String aggregationKey; // full key including selectedOptions fingerprint
+    private List<String> optionNames; // display names of the selectedOptions for this group
+
     // References to the actual order items for synchronization
     private List<ItemReference> itemReferences;
 
-    public AggregatedItem(String itemName, String orderType) {
+    public AggregatedItem(String aggregationKey, String itemName, String orderType) {
+        this.aggregationKey = aggregationKey;
         this.itemName = itemName;
         this.orderType = orderType;
         this.totalQuantity = 0;
         this.servedQuantity = 0;
         this.itemReferences = new ArrayList<>();
+        this.optionNames = new ArrayList<>();
     }
 
     // Add a reference to an order item
@@ -25,6 +29,17 @@ public class AggregatedItem {
         itemReferences.add(new ItemReference(customerNumber, orderItem));
         totalQuantity += orderItem.getQuantity();
         servedQuantity += orderItem.getPreparedQuantity();
+
+        // Capture option names from the first reference (all refs share the same options)
+        if (optionNames.isEmpty() && orderItem.getSelectedOptions() != null) {
+            for (SelectedOption opt : orderItem.getSelectedOptions()) {
+                optionNames.add(opt.getOptionName());
+            }
+        }
+    }
+
+    public List<String> getOptionNames() {
+        return optionNames;
     }
 
     // Get all item references
@@ -92,14 +107,8 @@ public class AggregatedItem {
         }
     }
 
-    // Create a unique key for aggregation
-    public static String createKey(String itemName, String orderType) {
-        return itemName + "_" + orderType;
-    }
-
+    // The full unique key (includes selectedOptions fingerprint)
     public String getKey() {
-        return createKey(itemName, orderType);
+        return aggregationKey;
     }
 }
-
-

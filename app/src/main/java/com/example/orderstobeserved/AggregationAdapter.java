@@ -1,8 +1,8 @@
 package com.example.orderstobeserved;
 
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -15,7 +15,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.ViewHolder> {
@@ -23,6 +22,9 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
     private Context context;
     private List<AggregatedItem> aggregatedItems;
     private OnAggregatedItemClickListener clickListener;
+
+    private static final int COLOR_BG_DINEIN = Color.parseColor("#BBDEFB");
+    private static final int COLOR_BG_TAKEAWAY = Color.parseColor("#FFF3C4");
 
     public interface OnAggregatedItemClickListener {
         void onAggregatedItemClick(AggregatedItem item);
@@ -32,6 +34,10 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
         this.context = context;
         this.aggregatedItems = aggregatedItems;
         this.clickListener = listener;
+    }
+
+    private int dpToPx(int dp) {
+        return (int) (dp * context.getResources().getDisplayMetrics().density + 0.5f);
     }
 
     @NonNull
@@ -45,41 +51,53 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         AggregatedItem item = aggregatedItems.get(position);
 
-        // Set text as "ItemName (x/y)"
-        String text = item.getItemName() + " (" + item.getServedQuantity() + "/" + item.getTotalQuantity() + ")";
-        holder.textView.setText(text);
+        // Item name
+        holder.itemNameText.setText(item.getItemName());
 
-        // Color-coded background based on order type
-        if ("take-away".equalsIgnoreCase(item.getOrderType())) {
-            holder.textView.setBackgroundColor(Color.parseColor("#FFE082")); // Yellow/amber
-            holder.textView.setTextColor(Color.parseColor("#000000"));
-        } else if ("dine-in".equalsIgnoreCase(item.getOrderType())) {
-            holder.textView.setBackgroundColor(Color.parseColor("#90CAF9")); // Light blue
-            holder.textView.setTextColor(Color.parseColor("#000000"));
+        // Progress counter
+        holder.progressText.setText(item.getServedQuantity() + "/" + item.getTotalQuantity());
+
+        // Show options if present
+        List<String> optionNames = item.getOptionNames();
+        if (optionNames != null && !optionNames.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < optionNames.size(); i++) {
+                if (i > 0) sb.append(" \u00B7 ");
+                sb.append(optionNames.get(i));
+            }
+            holder.optionsText.setText(sb.toString());
+            holder.optionsText.setVisibility(View.VISIBLE);
         } else {
-            holder.textView.setBackgroundColor(Color.WHITE);
-            holder.textView.setTextColor(Color.BLACK);
+            holder.optionsText.setVisibility(View.GONE);
         }
 
-        // Set click listener with haptic and visual feedback
-        holder.textView.setOnClickListener(v -> {
+        // Color-coded rounded background
+        boolean isTakeAway = "take-away".equalsIgnoreCase(item.getOrderType());
+        GradientDrawable bg = new GradientDrawable();
+        bg.setShape(GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(dpToPx(10));
+        bg.setColor(isTakeAway ? COLOR_BG_TAKEAWAY : COLOR_BG_DINEIN);
+        holder.cardContainer.setBackground(bg);
+
+        // Text colors
+        holder.itemNameText.setTextColor(Color.BLACK);
+        holder.progressText.setTextColor(Color.parseColor("#444444"));
+        holder.optionsText.setTextColor(Color.parseColor("#555555"));
+
+        // Click listener with feedback
+        holder.cardContainer.setOnClickListener(v -> {
             if (clickListener != null && !item.isFullyServed()) {
-                // Haptic feedback
                 performHapticFeedback(v);
-                
-                // Visual feedback animation (scale + background flash)
                 animateClick(v);
-                
                 clickListener.onAggregatedItemClick(item);
             }
         });
 
-        // Disable clicking if fully served
-        holder.textView.setEnabled(!item.isFullyServed());
-        holder.textView.setAlpha(item.isFullyServed() ? 0.5f : 1.0f);
+        // Disable if fully served
+        holder.cardContainer.setEnabled(!item.isFullyServed());
+        holder.cardContainer.setAlpha(item.isFullyServed() ? 0.5f : 1.0f);
     }
 
-    // Haptic feedback - slightly stronger for better feel
     private void performHapticFeedback(View view) {
         Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         if (vibrator != null && vibrator.hasVibrator()) {
@@ -91,28 +109,21 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
         }
     }
 
-    // Visual click animation with bounce effect
     private void animateClick(View view) {
-        // Save original alpha for background flash
         final float originalAlpha = view.getAlpha();
-        
-        // Quick background flash
         view.setAlpha(0.7f);
         view.animate().alpha(originalAlpha).setDuration(150).start();
-        
-        // Bounce animation - scale down then back up with overshoot
+
         view.animate()
             .scaleX(0.92f)
             .scaleY(0.92f)
             .setDuration(80)
             .withEndAction(() -> {
-                // Scale back up with slight overshoot for bounce effect
                 view.animate()
                     .scaleX(1.05f)
                     .scaleY(1.05f)
                     .setDuration(80)
                     .withEndAction(() -> {
-                        // Settle back to normal size
                         view.animate()
                             .scaleX(1.0f)
                             .scaleY(1.0f)
@@ -135,13 +146,17 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView textView;
+        LinearLayout cardContainer;
+        TextView itemNameText;
+        TextView progressText;
+        TextView optionsText;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            textView = (TextView) itemView.findViewById(R.id.aggregatedItemText);
+            cardContainer = itemView.findViewById(R.id.aggregatedCardContainer);
+            itemNameText = itemView.findViewById(R.id.itemNameText);
+            progressText = itemView.findViewById(R.id.progressText);
+            optionsText = itemView.findViewById(R.id.optionsText);
         }
     }
 }
-
-

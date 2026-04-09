@@ -17,6 +17,20 @@
 
 
 
+        <!-- Testing Mode Active Banner -->
+        <TextView
+            android:id="@+id/testModeBanner"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:layout_alignParentTop="true"
+            android:background="#FFEF4444"
+            android:gravity="center"
+            android:text="⚠  TESTING MODE ACTIVE — writes go to zTesting_ collections"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"

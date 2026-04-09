@@ -1,84 +1,136 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:flexbox="http://schemas.android.com/apk/res-auto"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="8dp"
-    android:elevation="8dp">
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#FFFFFF">
 
     <LinearLayout
         android:id="@+id/orderBlockContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/order_card_bg">
+        android:orientation="vertical">
 
-        <!-- Compact Header: Customer Info + Timer -->
-        <RelativeLayout
+        <!-- Header: #N (Name) + timer badge, single row -->
+        <LinearLayout
             android:id="@+id/headerContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:background="@drawable/order_card_bg">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="12dp">
 
-            <!-- Customer Info (smaller) -->
             <TextView
-                android:id="@+id/headerTextView"
+                android:id="@+id/customerNumberView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:text="25 (Customer)"
-                android:textSize="14sp"
-                android:textColor="#424242"
+                android:text="#25"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:fontFamily="sans-serif" />
+
+            <TextView
+                android:id="@+id/customerNameView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="(Customer Name)"
+                android:textSize="13sp"
+                android:textColor="@color/kds_customer_name"
+                android:layout_marginStart="6dp"
                 android:fontFamily="sans-serif"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
-            <!-- Hidden order time (not displayed) -->
-            <TextView
-                android:id="@+id/orderTimeTextView"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:visibility="gone" />
-
-            <!-- Count up timer only (softer red) -->
-            <TextView
-                android:id="@+id/servingTimeTextView"
+            <!-- Open Bill badge (hidden by default) -->
+            <LinearLayout
+                android:id="@+id/openBillBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:text="05:30"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="#EF9A9A"
-                android:fontFamily="sans-serif" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/open_bill_badge_locked_bg"
+                android:paddingStart="8dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:layout_marginStart="8dp"
+                android:visibility="gone">
 
-        </RelativeLayout>
+                <ImageView
+                    android:id="@+id/openBillIcon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_lock"
+                    android:tint="@android:color/white" />
+
+                <TextView
+                    android:id="@+id/openBillText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Open Bill"
+                    android:textSize="11sp"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <!-- Spacer to push timer to end -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/timerBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="05:32"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/timer_badge_bg"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:fontFamily="sans-serif-medium" />
+
+        </LinearLayout>
+
+        <!-- Hidden: used internally for sort -->
+        <TextView
+            android:id="@+id/orderTimeTextView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
         <!-- Divider -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#E0E0E0"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp" />
+            android:background="@color/kds_separator" />
 
-        <!-- FlexboxLayout for Order Items: items append horizontally and wrap when needed -->
-        <com.google.android.flexbox.FlexboxLayout
+        <!-- Item rows injected here by RecyclerAdapter2 -->
+        <LinearLayout
             android:id="@+id/itemsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            flexbox:flexWrap="wrap"
-            flexbox:justifyContent="flex_start"
-            android:padding="12dp">
-            <!-- Order item buttons will be added dynamically -->
-        </com.google.android.flexbox.FlexboxLayout>
+            android:orientation="vertical"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp" />
 
     </LinearLayout>
 

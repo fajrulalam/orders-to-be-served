@@ -11,17 +11,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/main_background">
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-
         <!-- Aggregation Section (Left Sidebar) -->
         <LinearLayout
             android:id="@+id/aggregationSection"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="30dp"
             android:orientation="vertical"
             android:background="#FFFFFF"
             android:elevation="4dp"
@@ -37,7 +33,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Rekap Pesanan"
+                    android:text="Summary"
                     android:textSize="34sp"
                     android:textStyle="bold"
                     android:textColor="#000000"
@@ -94,15 +90,97 @@
             app:srcCompat="@android:drawable/ic_menu_info_details"
             app:elevation="8dp" />
 
-        <!-- Main Orders RecyclerView (Full Width) -->
+        <!-- Testing Mode Active Banner (24dp tall, sits at very top, hidden by default) -->
+        <TextView
+            android:id="@+id/testModeBanner"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:layout_alignParentTop="true"
+            android:background="#FFEF4444"
+            android:gravity="center"
+            android:text="⚠  TESTING MODE ACTIVE — writes go to zTesting_ collections"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- Testing Mode Toggle Button (top-right) -->
+        <TextView
+            android:id="@+id/testModeToggleBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/filter_bar_bg"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:text="TEST"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#888888" />
+
+        <!-- Filter Toggle Bar (above orders) -->
+        <LinearLayout
+            android:id="@+id/filterBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@+id/aggregationSection"
+            android:layout_marginTop="24dp"
+            android:layout_marginStart="12dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/filter_bar_bg"
+            android:padding="4dp">
+
+            <ImageButton
+                android:id="@+id/filterAllBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/filter_toggle_selected_bg"
+                android:src="@drawable/ic_filter_all"
+                android:scaleType="centerInside"
+                android:padding="9dp"
+                android:contentDescription="All items" />
+
+            <ImageButton
+                android:id="@+id/filterFoodBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/filter_toggle_unselected_bg"
+                android:src="@drawable/ic_filter_food"
+                android:scaleType="centerInside"
+                android:padding="9dp"
+                android:contentDescription="Food only" />
+
+            <ImageButton
+                android:id="@+id/filterDrinkBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/filter_toggle_unselected_bg"
+                android:src="@drawable/ic_filter_drink"
+                android:scaleType="centerInside"
+                android:padding="9dp"
+                android:contentDescription="Beverages only" />
+
+        </LinearLayout>
+
+        <!-- Main Orders RecyclerView (below filter bar) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginStart="4dp"
-            android:layout_marginTop="20dp"
             android:layout_marginEnd="4dp"
             android:layout_marginBottom="16dp"
+            android:layout_below="@+id/filterBar"
             android:layout_toEndOf="@+id/aggregationSection"
             android:background="@android:color/transparent"
             android:clipToPadding="false"

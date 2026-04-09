@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/fajmac/StudioProjects/orders-to-be-served/app/src/test -type f -name *.java)",
+      "Bash(find /Users/fajmac/StudioProjects/orders-to-be-served/app/src/androidTest -type f -name *.java)",
+      "Bash(./gradlew assembleDebug)"
+    ]
+  },
+  "enableAllProjectMcpServers": false
+}
