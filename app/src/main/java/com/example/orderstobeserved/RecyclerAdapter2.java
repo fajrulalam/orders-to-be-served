@@ -7,6 +7,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.Log;
@@ -26,7 +27,9 @@ import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import android.widget.ImageView;
 
 public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.ViewHolder> {
@@ -34,12 +37,18 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
     public static final int FILTER_ALL = 0;
     public static final int FILTER_FOOD = 1;
     public static final int FILTER_DRINK = 2;
+    public static final int FILTER_CUSTOM = 3;
 
     private Context context;
     private ArrayList<OrderBlock> orderBlockList;
-    private Handler timerHandler = new Handler();
-    private SparseArray<Runnable> timerRunnables = new SparseArray<>();
+    private Handler timerHandler = new Handler(Looper.getMainLooper());
+    private Map<Integer, Runnable> timerRunnables = new HashMap<>(); // keyed by customerNumber
     private int filterMode = FILTER_ALL;
+    private List<String> customFilterMenus = new ArrayList<>();
+
+    public void setCustomFilterMenus(List<String> menus) {
+        this.customFilterMenus = menus;
+    }
 
     // Dine-in item row (dark text on light blue #BBDEFB)
     private static final int COLOR_DI_TEXT = Color.parseColor("#1A237E");
@@ -59,6 +68,7 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
 
     private static final int COLOR_CARD_GREYED = Color.parseColor("#F0F0F0");
     private static final int COLOR_MUTED_TEXT = Color.parseColor("#9CA3AF");
+    private static final int COLOR_NOTE_CARD_TEXT = Color.parseColor("#E65100");
 
     public RecyclerAdapter2(Context context, ArrayList<OrderBlock> orderBlockList) {
         this.context = context;
@@ -73,12 +83,19 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
         if (filterMode == FILTER_ALL) return true;
         if (filterMode == FILTER_FOOD) return item.getIsMakanan();
         if (filterMode == FILTER_DRINK) return !item.getIsMakanan();
+        if (filterMode == FILTER_CUSTOM) return customFilterMenus != null && customFilterMenus.contains(item.getNamaPesanan());
         return true;
     }
 
     private void notifyAggregationChanged() {
         if (context instanceof MainActivity) {
             ((MainActivity) context).notifyAggregationChanged();
+        }
+    }
+
+    private void notifyPreparedQuantityChanged(OrderBlock order) {
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).onPreparedQuantityChanged(order);
         }
     }
 
@@ -145,53 +162,43 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
             && !order.getServingTime().equals("...")
             && !order.getServingTime().equals("00:00");
 
+        final int customerNum = order.getCustomerNumber();
+
+        // Stop any existing timer for this order before rebinding
+        Runnable existingRunnable = timerRunnables.get(customerNum);
+        if (existingRunnable != null) {
+            timerHandler.removeCallbacks(existingRunnable);
+            timerRunnables.remove(customerNum);
+        }
+
         if (hasServedTimer) {
             holder.timerBadge.setText(order.getServingTime());
             holder.timerBadge.setBackgroundResource(R.drawable.timer_badge_served_bg);
             holder.timerBadge.setTextColor(Color.WHITE);
             holder.timerBadge.setVisibility(View.VISIBLE);
-            Runnable existingRunnable = timerRunnables.get(position);
-            if (existingRunnable != null) {
-                timerHandler.removeCallbacks(existingRunnable);
-                timerRunnables.remove(position);
-            }
         } else if (order.getOrderTimestamp() > 0) {
             holder.timerBadge.setBackgroundResource(R.drawable.timer_badge_bg);
             holder.timerBadge.setTextColor(Color.WHITE);
             holder.timerBadge.setVisibility(View.VISIBLE);
             holder.timerBadge.setText(order.getElapsedTimeFormatted());
 
-            final int currentPosition = position;
             Runnable timerRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    if (currentPosition < orderBlockList.size()
-                        && currentPosition >= 0
-                        && orderBlockList.get(currentPosition).getCustomerNumber() == order.getCustomerNumber()) {
-                        holder.timerBadge.setText(order.getElapsedTimeFormatted());
-                        timerHandler.postDelayed(this, 1000);
-                    } else {
-                        Runnable runnable = timerRunnables.get(currentPosition);
-                        if (runnable != null) {
-                            timerHandler.removeCallbacks(runnable);
-                            timerRunnables.remove(currentPosition);
-                        }
-                    }
+                    // Verify the holder still shows this order
+                    int pos = holder.getAdapterPosition();
+                    if (pos == RecyclerView.NO_POSITION) return;
+                    if (pos >= orderBlockList.size()) return;
+                    if (orderBlockList.get(pos).getCustomerNumber() != customerNum) return;
+
+                    holder.timerBadge.setText(order.getElapsedTimeFormatted());
+                    timerHandler.postDelayed(this, 1000);
                 }
             };
-            Runnable existingRunnable = timerRunnables.get(position);
-            if (existingRunnable != null) {
-                timerHandler.removeCallbacks(existingRunnable);
-            }
-            timerRunnables.put(position, timerRunnable);
-            timerHandler.post(timerRunnable);
+            timerRunnables.put(customerNum, timerRunnable);
+            timerHandler.postDelayed(timerRunnable, 1000);
         } else {
             holder.timerBadge.setVisibility(View.GONE);
-            Runnable existingRunnable = timerRunnables.get(position);
-            if (existingRunnable != null) {
-                timerHandler.removeCallbacks(existingRunnable);
-                timerRunnables.remove(position);
-            }
         }
 
         // --- ITEMS ---
@@ -245,8 +252,10 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
                 topRow.setOrientation(LinearLayout.HORIZONTAL);
                 topRow.setGravity(Gravity.CENTER_VERTICAL);
 
+                final String itemDisplayName = item.getNamaPesanan();
                 final TextView nameView = new TextView(context);
-                nameView.setText(item.getNamaPesanan() + " \u00D7" + totalQuantity);
+                updateItemNameRemainingQuantity(nameView, itemDisplayName,
+                    item.getPreparedQuantity(), totalQuantity);
                 nameView.setTextSize(17f);
                 nameView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
                 nameView.setTextColor(textColor);
@@ -264,6 +273,25 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
                 topRow.addView(nameView);
                 topRow.addView(progressView);
                 itemBlock.addView(topRow);
+
+                final TextView customerNoteView;
+                String noteText = item.getCustomerNote() != null ? item.getCustomerNote().trim() : "";
+                if (!noteText.isEmpty()) {
+                    customerNoteView = new TextView(context);
+                    customerNoteView.setText(noteText);
+                    customerNoteView.setTextSize(14f);
+                    customerNoteView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                    customerNoteView.setTextColor(COLOR_NOTE_CARD_TEXT);
+                    customerNoteView.setBackgroundResource(R.drawable.customer_note_card_bg);
+                    customerNoteView.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+                    LinearLayout.LayoutParams noteParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    noteParams.setMargins(0, dpToPx(6), 0, 0);
+                    customerNoteView.setLayoutParams(noteParams);
+                    itemBlock.addView(customerNoteView);
+                } else {
+                    customerNoteView = null;
+                }
 
                 // Addon chips
                 final FlexboxLayout addonsContainer;
@@ -287,7 +315,7 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
                 }
 
                 // Apply completion state
-                applyCompletionState(nameView, addonsContainer, itemBlock,
+                applyCompletionState(nameView, addonsContainer, customerNoteView, itemBlock,
                     item.getPreparedQuantity() >= totalQuantity);
 
                 // Click handlers (active orders only)
@@ -301,11 +329,13 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
                             performHapticFeedback(v);
                             animateClick(v);
                             item.incrementPrepared();
+                            updateItemNameRemainingQuantity(nameView, itemDisplayName,
+                                item.getPreparedQuantity(), totalQuantity);
                             updateProgressDisplay(progressView, item.getPreparedQuantity(),
                                 totalQuantity, progressMuted, progressDone);
-                            applyCompletionState(nameView, addonsContainer, itemBlock,
+                            applyCompletionState(nameView, addonsContainer, customerNoteView, itemBlock,
                                 item.getPreparedQuantity() >= totalQuantity);
-                            notifyAggregationChanged();
+                            notifyPreparedQuantityChanged(order);
                             updateCardGreyout(holder, order, fIsServedOrder);
                         }
                     });
@@ -314,12 +344,14 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
                         if (item.getPreparedQuantity() > 0) {
                             performHapticFeedback(v, 20);
                             animateClick(v);
-                            item.setPreparedQuantity(item.getPreparedQuantity() - 1);
+                            item.setPreparedQuantity(0);
+                            updateItemNameRemainingQuantity(nameView, itemDisplayName,
+                                item.getPreparedQuantity(), totalQuantity);
                             updateProgressDisplay(progressView, item.getPreparedQuantity(),
                                 totalQuantity, progressMuted, progressDone);
-                            applyCompletionState(nameView, addonsContainer, itemBlock,
+                            applyCompletionState(nameView, addonsContainer, customerNoteView, itemBlock,
                                 item.getPreparedQuantity() >= totalQuantity);
-                            notifyAggregationChanged();
+                            notifyPreparedQuantityChanged(order);
                             updateCardGreyout(holder, order, fIsServedOrder);
                         }
                         return true;
@@ -391,6 +423,16 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
         return chip;
     }
 
+    /** Name row: shows how many units are still left to prepare (updates with tap / long-press reset). */
+    private void updateItemNameRemainingQuantity(TextView nameView, String itemName,
+                                                  int prepared, int total) {
+        int remaining = total - prepared;
+        if (remaining < 0) {
+            remaining = 0;
+        }
+        nameView.setText(itemName + " \u00D7" + remaining);
+    }
+
     private void updateProgressDisplay(TextView progressView, int prepared, int total,
                                         int mutedColor, int doneColor) {
         if (prepared >= total) {
@@ -406,13 +448,21 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
     }
 
     private void applyCompletionState(TextView nameView, FlexboxLayout addonsContainer,
-                                       View itemBlock, boolean isDone) {
+                                       TextView customerNoteView, View itemBlock, boolean isDone) {
         int flag = Paint.STRIKE_THRU_TEXT_FLAG;
 
         if (isDone) {
             nameView.setPaintFlags(nameView.getPaintFlags() | flag);
         } else {
             nameView.setPaintFlags(nameView.getPaintFlags() & ~flag);
+        }
+
+        if (customerNoteView != null) {
+            if (isDone) {
+                customerNoteView.setPaintFlags(customerNoteView.getPaintFlags() | flag);
+            } else {
+                customerNoteView.setPaintFlags(customerNoteView.getPaintFlags() & ~flag);
+            }
         }
 
         if (addonsContainer != null) {
@@ -437,36 +487,27 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
     }
 
     public void stopAllTimers() {
-        for (int i = 0; i < timerRunnables.size(); i++) {
-            int key = timerRunnables.keyAt(i);
-            Runnable runnable = timerRunnables.get(key);
+        for (Runnable runnable : timerRunnables.values()) {
             timerHandler.removeCallbacks(runnable);
         }
         timerRunnables.clear();
     }
 
-    @Override
-    public void onViewRecycled(@NonNull ViewHolder holder) {
-        super.onViewRecycled(holder);
+    private void stopTimerForHolder(@NonNull ViewHolder holder) {
         int position = holder.getAdapterPosition();
-        if (position != RecyclerView.NO_POSITION) {
-            Runnable runnable = timerRunnables.get(position);
-            if (runnable != null) {
-                timerHandler.removeCallbacks(runnable);
-            }
+        if (position == RecyclerView.NO_POSITION || position >= orderBlockList.size()) return;
+        int customerNum = orderBlockList.get(position).getCustomerNumber();
+        Runnable runnable = timerRunnables.get(customerNum);
+        if (runnable != null) {
+            timerHandler.removeCallbacks(runnable);
+            timerRunnables.remove(customerNum);
         }
     }
 
     @Override
-    public void onViewDetachedFromWindow(@NonNull ViewHolder holder) {
-        super.onViewDetachedFromWindow(holder);
-        int position = holder.getAdapterPosition();
-        if (position != RecyclerView.NO_POSITION) {
-            Runnable runnable = timerRunnables.get(position);
-            if (runnable != null) {
-                timerHandler.removeCallbacks(runnable);
-            }
-        }
+    public void onViewRecycled(@NonNull ViewHolder holder) {
+        super.onViewRecycled(holder);
+        stopTimerForHolder(holder);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

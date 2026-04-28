@@ -22,6 +22,12 @@ public class OrderBlock {
     private String memberId;
     private String canteenId;
     private String firestoreDocumentId; // The actual Firestore document ID (not customerNumber)
+    private long takeAwayFee; // int64 from Firestore
+    private java.util.List<java.util.Map<String, Object>> orderHistory; // Open bill history array
+    /** Status doc id at the time this order was archived to RecentlyServed (for restore). */
+    private String sourceStatusDocumentId;
+    /** Firestore document id of this row in RecentlyServed (for delete after restore). */
+    private String recentlyServedDocumentId;
 
     // Constructor without servingTime (for pending orders)
     public OrderBlock(int bungkus, int customerNumber, String namaCustomer,
@@ -204,6 +210,38 @@ public class OrderBlock {
 
     public void setFirestoreDocumentId(String firestoreDocumentId) {
         this.firestoreDocumentId = firestoreDocumentId;
+    }
+
+    public long getTakeAwayFee() {
+        return takeAwayFee;
+    }
+
+    public void setTakeAwayFee(long takeAwayFee) {
+        this.takeAwayFee = takeAwayFee;
+    }
+
+    public java.util.List<java.util.Map<String, Object>> getOrderHistory() {
+        return orderHistory;
+    }
+
+    public void setOrderHistory(java.util.List<java.util.Map<String, Object>> orderHistory) {
+        this.orderHistory = orderHistory;
+    }
+
+    public String getSourceStatusDocumentId() {
+        return sourceStatusDocumentId == null ? "" : sourceStatusDocumentId;
+    }
+
+    public void setSourceStatusDocumentId(String sourceStatusDocumentId) {
+        this.sourceStatusDocumentId = sourceStatusDocumentId;
+    }
+
+    public String getRecentlyServedDocumentId() {
+        return recentlyServedDocumentId == null ? "" : recentlyServedDocumentId;
+    }
+
+    public void setRecentlyServedDocumentId(String recentlyServedDocumentId) {
+        this.recentlyServedDocumentId = recentlyServedDocumentId;
     }
 
     // Get elapsed time since order was placed in a formatted string (mm:ss)

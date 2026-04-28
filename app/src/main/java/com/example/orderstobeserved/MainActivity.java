@@ -13,10 +13,13 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.app.Dialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.util.DisplayMetrics;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
@@ -74,7 +77,8 @@ public class MainActivity extends AppCompatActivity {
 
     // Filter
     private int currentFilter = RecyclerAdapter2.FILTER_ALL;
-    private ImageButton filterAllBtn, filterFoodBtn, filterDrinkBtn;
+    private ImageButton filterAllBtn, filterFoodBtn, filterDrinkBtn, filterCustomBtn;
+    private List<String> customFilterMenus = new ArrayList<>();
 
     // Testing Mode
     private TextView testModeToggleBtn;
@@ -95,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE
             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         );
+
+        // KDS should never let the screen turn off
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         setContentView(R.layout.activity_main);
 
@@ -151,9 +158,11 @@ public class MainActivity extends AppCompatActivity {
         filterAllBtn = findViewById(R.id.filterAllBtn);
         filterFoodBtn = findViewById(R.id.filterFoodBtn);
         filterDrinkBtn = findViewById(R.id.filterDrinkBtn);
+        filterCustomBtn = findViewById(R.id.filterCustomBtn);
         filterAllBtn.setOnClickListener(v -> setFilter(RecyclerAdapter2.FILTER_ALL));
         filterFoodBtn.setOnClickListener(v -> setFilter(RecyclerAdapter2.FILTER_FOOD));
         filterDrinkBtn.setOnClickListener(v -> setFilter(RecyclerAdapter2.FILTER_DRINK));
+        filterCustomBtn.setOnClickListener(v -> showCustomFilterDialog());
 
         // Setup testing mode toggle
         testModeToggleBtn = findViewById(R.id.testModeToggleBtn);
@@ -263,6 +272,12 @@ public class MainActivity extends AppCompatActivity {
                                                     }
                                                 }
                                                 String namaPesanan = itemMap.get("namaPesanan") == null ? "" : String.valueOf(itemMap.get("namaPesanan"));
+                                                String customerNote = "";
+                                                Object customerNoteObj = itemMap.get("customerNote");
+                                                if (customerNoteObj != null && !String.valueOf(customerNoteObj).trim().isEmpty()
+                                                        && !String.valueOf(customerNoteObj).equalsIgnoreCase("null")) {
+                                                    customerNote = String.valueOf(customerNoteObj).trim();
+                                                }
                                                 int takeAwayQuantity = 0;
                                                 Object takeAwayObj = itemMap.get("takeAwayQuantity");
                                                 if (takeAwayObj != null && !String.valueOf(takeAwayObj).trim().isEmpty() &&
@@ -318,14 +333,28 @@ public class MainActivity extends AppCompatActivity {
                                                 // If the same item is ordered for both dine-in and take-away, they should be separate.
                                                 if (dineInQuantity > 0) {
                                                     NewOrderItem dineInItem = new NewOrderItem(namaPesanan, "dine-in", dineInQuantity, status, selectedOptions);
+                                                    dineInItem.setCustomerNote(customerNote);
                                                     dineInItem.setIsMakanan(isMakanan);
                                                     dineInItem.setHarga(harga);
+                                                    int dineInPrepared = 0;
+                                                    Object dineInPrepObj = itemMap.get("dineInPreparedQuantity");
+                                                    if (dineInPrepObj != null) {
+                                                        try { dineInPrepared = Integer.parseInt(String.valueOf(dineInPrepObj)); } catch (Exception ignored) { }
+                                                    }
+                                                    dineInItem.setPreparedQuantity(dineInPrepared);
                                                     newOrderItems.add(dineInItem);
                                                 }
                                                 if (takeAwayQuantity > 0) {
                                                     NewOrderItem takeAwayItem = new NewOrderItem(namaPesanan, "take-away", takeAwayQuantity, status, selectedOptions);
+                                                    takeAwayItem.setCustomerNote(customerNote);
                                                     takeAwayItem.setIsMakanan(isMakanan);
                                                     takeAwayItem.setHarga(harga);
+                                                    int takeAwayPrepared = 0;
+                                                    Object takeAwayPrepObj = itemMap.get("takeAwayPreparedQuantity");
+                                                    if (takeAwayPrepObj != null) {
+                                                        try { takeAwayPrepared = Integer.parseInt(String.valueOf(takeAwayPrepObj)); } catch (Exception ignored) { }
+                                                    }
+                                                    takeAwayItem.setPreparedQuantity(takeAwayPrepared);
                                                     newOrderItems.add(takeAwayItem);
                                                 }
                                             }
@@ -366,6 +395,30 @@ public class MainActivity extends AppCompatActivity {
                                         }
                                     }
                                     orderBlock.setMember(isMember);
+
+                                    // Grab takeAwayFee
+                                    long takeAwayFee = 0;
+                                    if (map.containsKey("takeAwayFee")) {
+                                        Object taf = map.get("takeAwayFee");
+                                        if (taf != null) {
+                                            try {
+                                                takeAwayFee = Long.parseLong(String.valueOf(taf));
+                                            } catch (NumberFormatException ignored) {}
+                                        }
+                                    }
+                                    orderBlock.setTakeAwayFee(takeAwayFee);
+
+                                    // Grab orderHistory
+                                    if (map.containsKey("orderHistory")) {
+                                        Object oh = map.get("orderHistory");
+                                        if (oh instanceof java.util.List) {
+                                            try {
+                                                @SuppressWarnings("unchecked")
+                                                java.util.List<java.util.Map<String, Object>> historyList = (java.util.List<java.util.Map<String, Object>>) oh;
+                                                orderBlock.setOrderHistory(historyList);
+                                            } catch (Exception ignored) {}
+                                        }
+                                    }
 
                                     // Store the actual Firestore document ID so we can delete correctly
                                     orderBlock.setFirestoreDocumentId(snapshot.getId());
@@ -414,6 +467,8 @@ public class MainActivity extends AppCompatActivity {
                                         existing.setMember(comp.isMember());
                                         existing.setMemberId(comp.getMemberId());
                                         existing.setTotal(comp.getTotal());
+                                        existing.setTakeAwayFee(comp.getTakeAwayFee());
+                                        existing.setOrderHistory(comp.getOrderHistory());
                                         existing.setNamaCustomer(comp.getNamaCustomer());
                                         existing.setFirestoreDocumentId(comp.getFirestoreDocumentId());
                                         break;
@@ -459,9 +514,17 @@ public class MainActivity extends AppCompatActivity {
     }
     
     @Override
+    protected void onResume() {
+        super.onResume();
+        // Restart count-up timers that were stopped in onPause()
+        if (recyclerAdapter != null) {
+            recyclerAdapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Stop all running timers to avoid memory leaks
         if (recyclerAdapter != null) {
             recyclerAdapter.stopAllTimers();
         }
@@ -515,25 +578,22 @@ public class MainActivity extends AppCompatActivity {
         for (AggregatedItem.ItemReference ref : references) {
             NewOrderItem orderItem = ref.getOrderItem();
             if (orderItem.getPreparedQuantity() < orderItem.getQuantity()) {
-                // Increment this item
                 orderItem.incrementPrepared();
-                
-                // Recalculate aggregation totals
                 aggregatedItem.recalculateTotals();
-                
-                // Update both adapters
                 recyclerAdapter.notifyDataSetChanged();
-                
-                // If the aggregated item is fully served, remove it from the list
+
                 if (aggregatedItem.isFullyServed()) {
                     aggregatedItemsList.remove(aggregatedItem);
                 }
-                
                 aggregationAdapter.notifyDataSetChanged();
-                
-                // Save to shared preferences
-                String json = gson.toJson(orderBlockArrayList);
-                sharedPreferences.edit().putString("order_list", json).apply();
+
+                // Persist to Firestore and SharedPreferences
+                for (OrderBlock order : orderBlockArrayList) {
+                    if (order.getCustomerNumber() == ref.getCustomerNumber()) {
+                        onPreparedQuantityChanged(order);
+                        break;
+                    }
+                }
                 
                 break; // Only increment one item per click
             }
@@ -601,12 +661,135 @@ public class MainActivity extends AppCompatActivity {
         rebuildAggregation();
     }
 
+    /**
+     * Called by adapters after preparedQuantity changes.
+     * Persists the updated state to Firestore + SharedPreferences and rebuilds aggregation.
+     */
+    public void onPreparedQuantityChanged(OrderBlock order) {
+        rebuildAggregation();
+        updatePreparedQuantitiesInFirestore(order);
+        String json = gson.toJson(orderBlockArrayList);
+        sharedPreferences.edit().putString("order_list", json).apply();
+    }
+
+    /**
+     * Write the current preparedQuantity values for every item in the order
+     * back to the Firestore Status document so the state survives snapshot refreshes.
+     */
+    private void updatePreparedQuantitiesInFirestore(OrderBlock order) {
+        String docId = order.getFirestoreDocumentId();
+        if (docId == null || docId.isEmpty()) return;
+
+        ArrayList<Map<String, Object>> firestoreItems =
+            StatusOrderItemsBuilder.toFirestoreArrayList(order.getOrderItems());
+
+        fs.collection(TestingModeManager.col(sharedPreferences, "Status"))
+            .document(docId)
+            .update("orderItems", firestoreItems)
+            .addOnFailureListener(e -> Log.e(TAG, "Failed to update prepared quantities", e));
+    }
+
     // Filter: check if item matches current filter
     private boolean matchesCurrentFilter(NewOrderItem item) {
         if (currentFilter == RecyclerAdapter2.FILTER_ALL) return true;
         if (currentFilter == RecyclerAdapter2.FILTER_FOOD) return item.getIsMakanan();
         if (currentFilter == RecyclerAdapter2.FILTER_DRINK) return !item.getIsMakanan();
+        if (currentFilter == RecyclerAdapter2.FILTER_CUSTOM) return customFilterMenus != null && customFilterMenus.contains(item.getNamaPesanan());
         return true;
+    }
+
+    /** True if any line currently visible under the food/drink filter is not fully prepared. */
+    private boolean hasIncompleteVisibleItems(OrderBlock order) {
+        ArrayList<NewOrderItem> items = order.getOrderItems();
+        if (items == null) return false;
+        for (NewOrderItem item : items) {
+            if (!matchesCurrentFilter(item)) continue;
+            if (item.getPreparedQuantity() < item.getQuantity()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Completes swipe-to-serve: delete Status, append RecentlyServed, update local lists.
+     */
+    private void performSwipeServe(OrderBlock servedOrder) {
+        int position = displayedOrders.indexOf(servedOrder);
+        if (position < 0) {
+            recyclerAdapter.notifyDataSetChanged();
+            return;
+        }
+
+        final String customerNumberToBeRemoved = String.valueOf(servedOrder.getCustomerNumber());
+
+        final String docId = servedOrder.getFirestoreDocumentId() != null && !servedOrder.getFirestoreDocumentId().isEmpty()
+                ? servedOrder.getFirestoreDocumentId()
+                : customerNumberToBeRemoved;
+
+        fs.collection(TestingModeManager.col(sharedPreferences, "Status"))
+                .document(docId)
+                .delete()
+                .addOnSuccessListener(unused ->
+                        Toast.makeText(getApplicationContext(), "Order " + customerNumberToBeRemoved + " served", Toast.LENGTH_SHORT).show());
+
+        ArrayList<Map<String, Object>> formattedOrderItems = StatusOrderItemsBuilder.toFirestoreArrayList(servedOrder.getOrderItems());
+
+        Map<String, Object> orderData = new HashMap<>();
+        orderData.put("canteenId", servedOrder.getCanteenId());
+        orderData.put("bungkus", servedOrder.getBungkus());
+        orderData.put("customerNumber", servedOrder.getCustomerNumber());
+        orderData.put("namaCustomer", servedOrder.getNamaCustomer());
+        orderData.put("customerPhone", servedOrder.getCustomerPhone());
+        orderData.put("isMember", servedOrder.isMember());
+        orderData.put("memberId", servedOrder.getMemberId());
+        orderData.put("takeAwayFee", servedOrder.getTakeAwayFee());
+        if (servedOrder.getOrderHistory() != null) {
+            orderData.put("orderHistory", servedOrder.getOrderHistory());
+        }
+        orderData.put("transactionMethod", servedOrder.getTransactionMethod());
+        orderData.put("paymentMethod", servedOrder.getPaymentMethod());
+        orderData.put("orderItems", formattedOrderItems);
+        orderData.put("waktuPengambilan", servedOrder.getWaktuPengambilan());
+
+        long timestamp = servedOrder.getOrderTimestamp() / 1000;
+        String formattedTimestamp = "Timestamp(seconds=" + timestamp + ", nanoseconds=317000000)";
+        orderData.put("waktuPesan", formattedTimestamp);
+
+        orderData.put("timestampServe", FieldValue.serverTimestamp());
+        orderData.put("status", "Served");
+        orderData.put("total", servedOrder.getTotal());
+        orderData.put("sourceStatusDocumentId", docId);
+
+        fs.collection(TestingModeManager.col(sharedPreferences, "RecentlyServed")).add(orderData);
+
+        displayedOrders.remove(position);
+        orderBlockArrayList.remove(servedOrder);
+        recyclerAdapter.notifyItemRemoved(position);
+        rebuildAggregation();
+    }
+
+    private void showIncompleteConfirmDialog(int position, OrderBlock servedOrder) {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_confirm_serve);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        dialog.setCancelable(true);
+        dialog.setOnCancelListener(d -> recyclerAdapter.notifyItemChanged(position));
+
+        dialog.findViewById(R.id.btnCancel).setOnClickListener(v -> {
+            dialog.dismiss();
+            recyclerAdapter.notifyItemChanged(position);
+        });
+
+        dialog.findViewById(R.id.btnConfirm).setOnClickListener(v -> {
+            dialog.dismiss();
+            performSwipeServe(servedOrder);
+        });
+
+        dialog.show();
     }
 
     // Rebuild displayedOrders from orderBlockArrayList based on filter, then refresh views
@@ -640,7 +823,10 @@ public class MainActivity extends AppCompatActivity {
 
     // Set the active filter mode
     private void setFilter(int filter) {
-        if (currentFilter == filter) return;
+        // Always re-apply FILTER_CUSTOM even if it was already active,
+        // because the user may have changed their menu selection in the dialog.
+        boolean sameFilter = (currentFilter == filter);
+        if (sameFilter && filter != RecyclerAdapter2.FILTER_CUSTOM) return;
         currentFilter = filter;
         if (recyclerAdapter != null) {
             recyclerAdapter.setFilterMode(filter);
@@ -651,8 +837,8 @@ public class MainActivity extends AppCompatActivity {
 
     // Update filter button visuals
     private void updateFilterButtons() {
-        ImageButton[] buttons = { filterAllBtn, filterFoodBtn, filterDrinkBtn };
-        int[] filters = { RecyclerAdapter2.FILTER_ALL, RecyclerAdapter2.FILTER_FOOD, RecyclerAdapter2.FILTER_DRINK };
+        ImageButton[] buttons = { filterAllBtn, filterFoodBtn, filterDrinkBtn, filterCustomBtn };
+        int[] filters = { RecyclerAdapter2.FILTER_ALL, RecyclerAdapter2.FILTER_FOOD, RecyclerAdapter2.FILTER_DRINK, RecyclerAdapter2.FILTER_CUSTOM };
 
         for (int i = 0; i < buttons.length; i++) {
             if (filters[i] == currentFilter) {
@@ -663,6 +849,107 @@ public class MainActivity extends AppCompatActivity {
                 buttons[i].setColorFilter(Color.parseColor("#666666"));
             }
         }
+    }
+
+    private void showCustomFilterDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(60, 60, 60, 60);
+        root.setBackgroundColor(Color.WHITE);
+
+        TextView titleView = new TextView(this);
+        titleView.setText("Select Menus Output");
+        titleView.setTextSize(20f);
+        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
+        titleView.setTextColor(Color.BLACK);
+        root.addView(titleView);
+
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        scrollParams.setMargins(0, 30, 0, 30);
+        scrollView.setLayoutParams(scrollParams);
+        
+        LinearLayout checkboxContainer = new LinearLayout(this);
+        checkboxContainer.setOrientation(LinearLayout.VERTICAL);
+        scrollView.addView(checkboxContainer);
+        root.addView(scrollView);
+
+        LinearLayout btnRow = new LinearLayout(this);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setGravity(android.view.Gravity.END);
+
+        android.widget.Button cancelBtn = new android.widget.Button(this);
+        cancelBtn.setText("Cancel");
+        cancelBtn.setBackgroundColor(Color.TRANSPARENT);
+        cancelBtn.setTextColor(Color.parseColor("#888888"));
+        cancelBtn.setOnClickListener(v -> dialog.dismiss());
+        btnRow.addView(cancelBtn);
+
+        android.widget.Space space = new android.widget.Space(this);
+        space.setLayoutParams(new LinearLayout.LayoutParams(40, 1));
+        btnRow.addView(space);
+
+        android.widget.Button applyBtn = new android.widget.Button(this);
+        applyBtn.setText("Apply Base Filter");
+        applyBtn.setBackgroundColor(Color.TRANSPARENT);
+        applyBtn.setTextColor(Color.parseColor("#007AFF"));
+        btnRow.addView(applyBtn);
+
+        root.addView(btnRow);
+        dialog.setContentView(root);
+        
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels * 0.4), (int)(getResources().getDisplayMetrics().heightPixels * 0.8));
+        }
+
+        // MenuCollection is always under the real Canteens root — it is NOT
+        // duplicated under zTesting_Canteens, so never apply the testing prefix here.
+        fs.collection("Canteens")
+            .document("canteen375")
+            .collection("MenuCollection")
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
+                if (queryDocumentSnapshots.isEmpty()) {
+                    Toast.makeText(this, "MenuCollection is empty for " + CANTEEN_ID, Toast.LENGTH_SHORT).show();
+                }
+                checkboxContainer.removeAllViews();
+                List<android.widget.CheckBox> checkBoxes = new ArrayList<>();
+                for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                    String namaMenu = doc.getId();
+                    android.widget.CheckBox cb = new android.widget.CheckBox(this);
+                    cb.setText(namaMenu);
+                    cb.setTextColor(Color.BLACK);
+                    cb.setTextSize(18f);
+                    cb.setPadding(0, 15, 0, 15);
+                    cb.setChecked(customFilterMenus.contains(namaMenu));
+                    checkBoxes.add(cb);
+                    checkboxContainer.addView(cb);
+                }
+
+                applyBtn.setOnClickListener(v -> {
+                    customFilterMenus.clear();
+                    for (android.widget.CheckBox cb : checkBoxes) {
+                        if (cb.isChecked()) {
+                            customFilterMenus.add(cb.getText().toString());
+                        }
+                    }
+                    if (recyclerAdapter != null) {
+                        recyclerAdapter.setCustomFilterMenus(customFilterMenus);
+                    }
+                    setFilter(RecyclerAdapter2.FILTER_CUSTOM);
+                    dialog.dismiss();
+                });
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(this, "Failed to load MenuCollection: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Log.e(TAG, "Error loading MenuCollection", e);
+            });
+
+        dialog.show();
     }
 
     // Toggle testing mode on/off. Clears local order cache and restarts the activity
@@ -702,6 +989,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
             int position = viewHolder.getAdapterPosition();
+            if (position < 0 || position >= displayedOrders.size()) {
+                return;
+            }
             OrderBlock servedOrder = displayedOrders.get(position);
 
             // Block swipe on unclosed Open Bill orders
@@ -713,80 +1003,12 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            final String customerNumberToBeRemoved = String.valueOf(servedOrder.getCustomerNumber());
-
-            // Use the real Firestore document ID captured from the snapshot, not customerNumber.
-            // Deleting by customerNumber would silently succeed (doc not found) and leave the order in Firestore.
-            final String docId = servedOrder.getFirestoreDocumentId() != null && !servedOrder.getFirestoreDocumentId().isEmpty()
-                    ? servedOrder.getFirestoreDocumentId()
-                    : customerNumberToBeRemoved; // fallback for legacy data
-
-            // Remove the served order from the "Status" collection.
-            fs.collection(TestingModeManager.col(sharedPreferences, "Status"))
-                    .document(docId)
-                    .delete()
-                    .addOnSuccessListener(unused ->
-                            Toast.makeText(getApplicationContext(), "Order " + customerNumberToBeRemoved + " served", Toast.LENGTH_SHORT).show());
-            // Format the order items for RecentlyServed collection (preserve all fields)
-            ArrayList<Map<String, Object>> formattedOrderItems = new ArrayList<>();
-            for (NewOrderItem item : servedOrder.getOrderItems()) {
-                Map<String, Object> formattedItem = new HashMap<>();
-                formattedItem.put("namaPesanan", item.getNamaPesanan());
-                formattedItem.put("orderType", item.getOrderType());
-                formattedItem.put("quantity", item.getQuantity());
-                formattedItem.put("preparedQuantity", item.getQuantity());
-                formattedItem.put("status", "");
-                formattedItem.put("isMakanan", item.getIsMakanan());
-                formattedItem.put("harga", item.getHarga());
-
-                // Preserve selectedOptions
-                if (item.getSelectedOptions() != null && !item.getSelectedOptions().isEmpty()) {
-                    ArrayList<Map<String, Object>> optionsList = new ArrayList<>();
-                    for (SelectedOption opt : item.getSelectedOptions()) {
-                        Map<String, Object> optMap = new HashMap<>();
-                        optMap.put("optionId", opt.getOptionId());
-                        optMap.put("optionName", opt.getOptionName());
-                        optMap.put("groupId", opt.getGroupId());
-                        optMap.put("groupName", opt.getGroupName());
-                        optMap.put("priceAdjustment", opt.getPriceAdjustment());
-                        optionsList.add(optMap);
-                    }
-                    formattedItem.put("selectedOptions", optionsList);
-                }
-
-                formattedOrderItems.add(formattedItem);
+            if (hasIncompleteVisibleItems(servedOrder)) {
+                showIncompleteConfirmDialog(position, servedOrder);
+                return;
             }
 
-            Map<String, Object> orderData = new HashMap<>();
-            orderData.put("canteenId", servedOrder.getCanteenId());
-            orderData.put("bungkus", servedOrder.getBungkus());
-            orderData.put("customerNumber", servedOrder.getCustomerNumber());
-            orderData.put("namaCustomer", servedOrder.getNamaCustomer());
-            orderData.put("customerPhone", servedOrder.getCustomerPhone());
-            orderData.put("isMember", servedOrder.isMember());
-            orderData.put("memberId", servedOrder.getMemberId());
-            orderData.put("transactionMethod", servedOrder.getTransactionMethod());
-            orderData.put("paymentMethod", servedOrder.getPaymentMethod());
-            orderData.put("orderItems", formattedOrderItems);
-            orderData.put("waktuPengambilan", servedOrder.getWaktuPengambilan());
-
-            long timestamp = servedOrder.getOrderTimestamp() / 1000;
-            String formattedTimestamp = "Timestamp(seconds=" + timestamp + ", nanoseconds=317000000)";
-            orderData.put("waktuPesan", formattedTimestamp);
-
-            orderData.put("timestampServe", FieldValue.serverTimestamp());
-            orderData.put("status", "Served");
-            orderData.put("total", servedOrder.getTotal());
-
-            fs.collection(TestingModeManager.col(sharedPreferences, "RecentlyServed")).add(orderData);
-
-            // Remove from both lists
-            displayedOrders.remove(position);
-            orderBlockArrayList.remove(servedOrder);
-            recyclerAdapter.notifyItemRemoved(position);
-
-            // Rebuild aggregation after removing order
-            rebuildAggregation();
+            performSwipeServe(servedOrder);
         }
     };
 

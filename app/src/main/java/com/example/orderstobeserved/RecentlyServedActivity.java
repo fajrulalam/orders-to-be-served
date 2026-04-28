@@ -6,7 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -17,12 +17,15 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -31,6 +34,7 @@ import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,6 +43,7 @@ import java.util.TimeZone;
 public class RecentlyServedActivity extends AppCompatActivity {
 
     private static final String TAG_RS = "RecentlyServedActivity";
+    private static final String DEFAULT_CANTEEN_ID = "canteen375_plazaUnipdu";
     private ArrayList<OrderBlock> orderBlockArrayList;
     private FloatingActionButton toggleActivityFab;
     private RecyclerView recyclerView;
@@ -84,6 +89,25 @@ public class RecentlyServedActivity extends AppCompatActivity {
 
         // Fetch recently served orders
         fetchRecentlyServed();
+
+        ItemTouchHelper restoreSwipeHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION || position >= orderBlockArrayList.size()) {
+                    return;
+                }
+                restoreOrderToStatus(position, orderBlockArrayList.get(position));
+            }
+        });
+        restoreSwipeHelper.attachToRecyclerView(recyclerView);
 
         // Single toggle FAB - switches back to MainActivity
         toggleActivityFab.setOnClickListener(v -> {
@@ -148,6 +172,14 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                         String namaPesanan = String.valueOf(item.get("namaPesanan"));
                                         String orderType = item.containsKey("orderType") ? 
                                                 String.valueOf(item.get("orderType")) : "take-away";
+
+                                        String customerNote = "";
+                                        if (item.containsKey("customerNote") && item.get("customerNote") != null) {
+                                            String cn = String.valueOf(item.get("customerNote")).trim();
+                                            if (!cn.isEmpty() && !cn.equalsIgnoreCase("null")) {
+                                                customerNote = cn;
+                                            }
+                                        }
                                         
                                         int quantity = item.containsKey("quantity") ?
                                                 Integer.parseInt(String.valueOf(item.get("quantity"))) : 1;
@@ -161,21 +193,31 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                         Log.d("RecentlyServed", "Item: " + namaPesanan + 
                                                " (" + orderType + ") - " + preparedQuantity + "/" + quantity + 
                                                " Status: " + status);
-                                        
-                                        // Create order item directly from the fields
+
+                                        ArrayList<SelectedOption> flatOpts = parseSelectedOptionsFromItemMap(item);
                                         NewOrderItem orderItem = new NewOrderItem(
                                             namaPesanan,
                                             orderType,
                                             quantity,
                                             status,
-                                            null
+                                            flatOpts
                                         );
+                                        orderItem.setCustomerNote(customerNote);
                                         orderItem.setPreparedQuantity(preparedQuantity);
+                                        applyItemMetaFromFirestoreMap(item, orderItem);
                                         orderItems.add(orderItem);
-                                        
+
                                     } else {
                                         // This is Status collection format with dineInQuantity/takeAwayQuantity
                                         String namaPesanan = String.valueOf(item.get("namaPesanan"));
+
+                                        String customerNote = "";
+                                        if (item.containsKey("customerNote") && item.get("customerNote") != null) {
+                                            String cn = String.valueOf(item.get("customerNote")).trim();
+                                            if (!cn.isEmpty() && !cn.equalsIgnoreCase("null")) {
+                                                customerNote = cn;
+                                            }
+                                        }
                                         
                                         // Get dineInQuantity and takeAwayQuantity
                                         int dineInQuantity = item.containsKey("dineInQuantity") ?
@@ -184,6 +226,8 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                         int takeAwayQuantity = item.containsKey("takeAwayQuantity") ?
                                             Integer.parseInt(String.valueOf(item.get("takeAwayQuantity"))) : 0;
                                         
+                                        ArrayList<SelectedOption> statusFmtOpts = parseSelectedOptionsFromItemMap(item);
+
                                         // Create dine-in order item if quantity > 0
                                         if (dineInQuantity > 0) {
                                             NewOrderItem orderItem = new NewOrderItem(
@@ -191,9 +235,20 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                                 "dine-in",
                                                 dineInQuantity,
                                                 "completed",
-                                                null
+                                                statusFmtOpts
                                             );
-                                            orderItem.setPreparedQuantity(dineInQuantity); // Mark as fully served
+                                            orderItem.setCustomerNote(customerNote);
+                                            int dineInPrepared = dineInQuantity;
+                                            if (item.containsKey("dineInPreparedQuantity")) {
+                                                try {
+                                                    dineInPrepared = Integer.parseInt(
+                                                            String.valueOf(item.get("dineInPreparedQuantity")));
+                                                } catch (NumberFormatException ignored) {
+                                                    dineInPrepared = dineInQuantity;
+                                                }
+                                            }
+                                            orderItem.setPreparedQuantity(dineInPrepared);
+                                            applyItemMetaFromFirestoreMap(item, orderItem);
                                             orderItems.add(orderItem);
                                         }
 
@@ -204,9 +259,20 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                                 "take-away",
                                                 takeAwayQuantity,
                                                 "completed",
-                                                null
+                                                statusFmtOpts
                                             );
-                                            orderItem.setPreparedQuantity(takeAwayQuantity); // Mark as fully served
+                                            orderItem.setCustomerNote(customerNote);
+                                            int takeAwayPrepared = takeAwayQuantity;
+                                            if (item.containsKey("takeAwayPreparedQuantity")) {
+                                                try {
+                                                    takeAwayPrepared = Integer.parseInt(
+                                                            String.valueOf(item.get("takeAwayPreparedQuantity")));
+                                                } catch (NumberFormatException ignored) {
+                                                    takeAwayPrepared = takeAwayQuantity;
+                                                }
+                                            }
+                                            orderItem.setPreparedQuantity(takeAwayPrepared);
+                                            applyItemMetaFromFirestoreMap(item, orderItem);
                                             orderItems.add(orderItem);
                                         }
                                     }
@@ -228,17 +294,19 @@ public class RecentlyServedActivity extends AppCompatActivity {
                             // Format timestamp for display and calculate duration
                             String hourSecond = "";
                             String durationStr = "...";
-                            
+                            long orderTimestampMs = 0;
+
                             if (map.containsKey("waktuPesan")) {
                                 Object waktuPesanObj = map.get("waktuPesan");
                                 if (waktuPesanObj instanceof Timestamp) {
                                     // Handle Timestamp format
                                     Timestamp timestamp = (Timestamp) waktuPesanObj;
                                     Date date = timestamp.toDate();
+                                    orderTimestampMs = date.getTime();
                                     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.ENGLISH);
                                     sdf.setTimeZone(TimeZone.getTimeZone(ZoneId.of("Asia/Jakarta")));
                                     hourSecond = sdf.format(date);
-                                    
+
                                     // Calculate duration if timestampServe is available
                                     if (map.containsKey("timestampServe") && map.get("timestampServe") instanceof Timestamp) {
                                         Timestamp serveTimestamp = (Timestamp) map.get("timestampServe");
@@ -253,7 +321,8 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                         String waktuPesan = waktuPesanObj.toString();
                                         waktuPesan = waktuPesan.substring(waktuPesan.indexOf("=")+1, waktuPesan.indexOf(","));
                                         int waktuPesan_int = Integer.parseInt(waktuPesan);
-                                        
+                                        orderTimestampMs = waktuPesan_int * 1000L;
+
                                         Date date = new Date(waktuPesan_int * 1000);
                                         SimpleDateFormat sdf = new SimpleDateFormat("EEEE,MMMM d,yyyy HH:mm:ss", Locale.ENGLISH);
                                         sdf.setTimeZone(TimeZone.getTimeZone(ZoneId.of("Asia/Jakarta")));
@@ -299,7 +368,76 @@ public class RecentlyServedActivity extends AppCompatActivity {
                                     hourSecond,  // Display time
                                     durationStr  // Serving duration
                             );
-                            
+
+                            orderBlock.setRecentlyServedDocumentId(snapshot.getId());
+                            if (map.containsKey("sourceStatusDocumentId") && map.get("sourceStatusDocumentId") != null) {
+                                String sid = String.valueOf(map.get("sourceStatusDocumentId")).trim();
+                                if (!sid.isEmpty() && !sid.equalsIgnoreCase("null")) {
+                                    orderBlock.setSourceStatusDocumentId(sid);
+                                }
+                            }
+
+                            int totalVal = 0;
+                            if (map.containsKey("total")) {
+                                try {
+                                    totalVal = Integer.parseInt(String.valueOf(map.get("total")));
+                                } catch (NumberFormatException ignored) {
+                                    totalVal = 0;
+                                }
+                            }
+                            orderBlock.setTotal(totalVal);
+                            orderBlock.setCanteenId(map.get("canteenId") == null ? ""
+                                    : String.valueOf(map.get("canteenId")));
+                            orderBlock.setTransactionMethod(map.get("transactionMethod") == null ? ""
+                                    : String.valueOf(map.get("transactionMethod")));
+                            orderBlock.setPaymentMethod(map.get("paymentMethod") == null ? ""
+                                    : String.valueOf(map.get("paymentMethod")));
+                            boolean isClosedVal = true;
+                            if (map.containsKey("isClosed")) {
+                                Object isClosedObj = map.get("isClosed");
+                                if (isClosedObj instanceof Boolean) {
+                                    isClosedVal = (Boolean) isClosedObj;
+                                } else if (isClosedObj != null) {
+                                    isClosedVal = Boolean.parseBoolean(String.valueOf(isClosedObj));
+                                }
+                            }
+                            orderBlock.setClosed(isClosedVal);
+                            orderBlock.setCustomerPhone(map.get("customerPhone") == null ? ""
+                                    : String.valueOf(map.get("customerPhone")));
+                            boolean isMemberVal = false;
+                            if (map.containsKey("isMember")) {
+                                Object isMemberObj = map.get("isMember");
+                                if (isMemberObj instanceof Boolean) {
+                                    isMemberVal = (Boolean) isMemberObj;
+                                } else if (isMemberObj != null) {
+                                    isMemberVal = Boolean.parseBoolean(String.valueOf(isMemberObj));
+                                }
+                            }
+                            orderBlock.setMember(isMemberVal);
+                            orderBlock.setMemberId(map.get("memberId") == null ? ""
+                                    : String.valueOf(map.get("memberId")));
+
+                            long takeAwayFeeVal = 0;
+                            if (map.containsKey("takeAwayFee")) {
+                                try {
+                                    takeAwayFeeVal = Long.parseLong(String.valueOf(map.get("takeAwayFee")));
+                                } catch (NumberFormatException ignored) {}
+                            }
+                            orderBlock.setTakeAwayFee(takeAwayFeeVal);
+
+                            if (map.containsKey("orderHistory")) {
+                                Object oh = map.get("orderHistory");
+                                if (oh instanceof java.util.List) {
+                                    try {
+                                        @SuppressWarnings("unchecked")
+                                        java.util.List<java.util.Map<String, Object>> historyList = (java.util.List<java.util.Map<String, Object>>) oh;
+                                        orderBlock.setOrderHistory(historyList);
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+
+                            orderBlock.setOrderTimestamp(orderTimestampMs);
+
                             orderBlockArrayList.add(orderBlock);
                         } catch (Exception e) {
                             Log.e("ParseError", "Error parsing served order data: " + e.getMessage(), e);
@@ -330,5 +468,145 @@ public class RecentlyServedActivity extends AppCompatActivity {
         if (recyclerAdapter != null) {
             recyclerAdapter.stopAllTimers();
         }
+    }
+
+    private static ArrayList<SelectedOption> parseSelectedOptionsFromItemMap(Map<String, Object> itemMap) {
+        ArrayList<SelectedOption> selectedOptions = new ArrayList<>();
+        Object selectedOptionsObj = itemMap.get("selectedOptions");
+        if (!(selectedOptionsObj instanceof List)) {
+            return selectedOptions;
+        }
+        List<?> selectedOptionsList = (List<?>) selectedOptionsObj;
+        for (Object optObj : selectedOptionsList) {
+            if (optObj instanceof Map) {
+                Map<String, Object> optMap = (Map<String, Object>) optObj;
+                String optionId = optMap.get("optionId") == null ? "" : String.valueOf(optMap.get("optionId"));
+                String optionName = optMap.get("optionName") == null ? "" : String.valueOf(optMap.get("optionName"));
+                String groupId = optMap.get("groupId") == null ? "" : String.valueOf(optMap.get("groupId"));
+                String groupName = optMap.get("groupName") == null ? "" : String.valueOf(optMap.get("groupName"));
+                int priceAdj = 0;
+                Object priceAdjObj = optMap.get("priceAdjustment");
+                if (priceAdjObj != null) {
+                    try {
+                        priceAdj = Integer.parseInt(String.valueOf(priceAdjObj));
+                    } catch (NumberFormatException ignored) {
+                        priceAdj = 0;
+                    }
+                }
+                selectedOptions.add(new SelectedOption(optionId, optionName, groupId, groupName, priceAdj));
+            }
+        }
+        return selectedOptions;
+    }
+
+    private static void applyItemMetaFromFirestoreMap(Map<String, Object> itemMap, NewOrderItem orderItem) {
+        boolean isMakanan = true;
+        if (itemMap.containsKey("isMakanan")) {
+            Object isMakananObj = itemMap.get("isMakanan");
+            if (isMakananObj instanceof Boolean) {
+                isMakanan = (Boolean) isMakananObj;
+            } else if (isMakananObj != null) {
+                isMakanan = Boolean.parseBoolean(String.valueOf(isMakananObj));
+            }
+        }
+        orderItem.setIsMakanan(isMakanan);
+        int harga = 0;
+        if (itemMap.containsKey("harga")) {
+            try {
+                harga = Integer.parseInt(String.valueOf(itemMap.get("harga")));
+            } catch (NumberFormatException ignored) {
+                harga = 0;
+            }
+        }
+        orderItem.setHarga(harga);
+    }
+
+    private void restoreOrderToStatus(int position, OrderBlock order) {
+        SharedPreferences prefs = getSharedPreferences("shared_prefs", MODE_PRIVATE);
+        String sourceId = order.getSourceStatusDocumentId();
+        String rsId = order.getRecentlyServedDocumentId();
+
+        if (sourceId == null || sourceId.isEmpty()) {
+            Toast.makeText(this,
+                    "Tidak dapat dikembalikan (riwayat lama tanpa tautan Status).",
+                    Toast.LENGTH_LONG).show();
+            recyclerAdapter.notifyItemChanged(position);
+            return;
+        }
+        if (rsId == null || rsId.isEmpty()) {
+            recyclerAdapter.notifyItemChanged(position);
+            return;
+        }
+
+        String statusCol = TestingModeManager.col(prefs, "Status");
+        String rsCol = TestingModeManager.col(prefs, "RecentlyServed");
+        DocumentReference statusRef = fs.collection(statusCol).document(sourceId);
+        DocumentReference rsRef = fs.collection(rsCol).document(rsId);
+
+        statusRef.get().addOnSuccessListener(snap -> {
+            if (snap.exists()) {
+                Toast.makeText(this,
+                        "Slot Status sudah dipakai pesanan lain. Tidak dapat dikembalikan.",
+                        Toast.LENGTH_LONG).show();
+                recyclerAdapter.notifyItemChanged(position);
+                return;
+            }
+            Map<String, Object> data = buildStatusPayloadForRestore(order);
+            WriteBatch batch = fs.batch();
+            batch.set(statusRef, data);
+            batch.delete(rsRef);
+            batch.commit()
+                    .addOnSuccessListener(unused -> Toast.makeText(this,
+                            "Pesanan dikembalikan ke antrian",
+                            Toast.LENGTH_SHORT).show())
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG_RS, "restore failed", e);
+                        Toast.makeText(this,
+                                "Gagal mengembalikan: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                        recyclerAdapter.notifyItemChanged(position);
+                    });
+        }).addOnFailureListener(e -> {
+            Log.e(TAG_RS, "restore get Status failed", e);
+            Toast.makeText(this,
+                    "Gagal memeriksa Status: " + e.getMessage(),
+                    Toast.LENGTH_LONG).show();
+            recyclerAdapter.notifyItemChanged(position);
+        });
+    }
+
+    private Map<String, Object> buildStatusPayloadForRestore(OrderBlock order) {
+        Map<String, Object> data = new HashMap<>();
+        long ms = order.getOrderTimestamp();
+        Timestamp waktuPesanTs;
+        if (ms > 0) {
+            waktuPesanTs = new Timestamp(ms / 1000, (int) ((ms % 1000) * 1_000_000));
+        } else {
+            waktuPesanTs = Timestamp.now();
+        }
+        data.put("waktuPesan", waktuPesanTs);
+
+        String canteenId = order.getCanteenId();
+        if (canteenId == null || canteenId.trim().isEmpty() || "null".equalsIgnoreCase(canteenId)) {
+            canteenId = DEFAULT_CANTEEN_ID;
+        }
+        data.put("canteenId", canteenId);
+        data.put("customerNumber", order.getCustomerNumber());
+        data.put("namaCustomer", order.getNamaCustomer() != null ? order.getNamaCustomer() : "");
+        data.put("bungkus", order.getBungkus());
+        data.put("waktuPengambilan", order.getWaktuPengambilan() != null ? order.getWaktuPengambilan() : "");
+        data.put("total", order.getTotal());
+        data.put("orderItems", StatusOrderItemsBuilder.toFirestoreArrayList(order.getOrderItems()));
+        data.put("transactionMethod", order.getTransactionMethod() != null ? order.getTransactionMethod() : "");
+        data.put("paymentMethod", order.getPaymentMethod() != null ? order.getPaymentMethod() : "");
+        data.put("isClosed", order.isClosed());
+        data.put("customerPhone", order.getCustomerPhone() != null ? order.getCustomerPhone() : "");
+        data.put("isMember", order.isMember());
+        data.put("memberId", order.getMemberId() != null ? order.getMemberId() : "");
+        data.put("takeAwayFee", order.getTakeAwayFee());
+        if (order.getOrderHistory() != null) {
+            data.put("orderHistory", order.getOrderHistory());
+        }
+        return data;
     }
 }

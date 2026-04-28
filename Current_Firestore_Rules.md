@@ -109,6 +109,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── B2B VOUCHER PROGRAMS ─────────────────────────────────────────────────
+    match /voucherPrograms/{id} {
+      allow read: if isAuthenticated();
+      // POS increments totalRedeemed atomically during order WriteBatch.
+      // Settlement (settleProgram) updates totalSettled and status from POS.
+      allow update: if isAuthenticated();
+      allow create, delete: if isAdmin();
+    }
+
     // ── VOUCHER GROUP (CAMPAIGNS) ─────────────────────────────────────────────
     match /voucherGroup/{groupId} {
       allow read: if isAuthenticated();
@@ -279,6 +288,10 @@ service cloud.firestore {
     }
 
     match /zTesting_voucherGroup/{id} {
+      allow read, write, update, delete: if true;
+    }
+
+    match /zTesting_voucherPrograms/{id} {
       allow read, write, update, delete: if true;
     }
 

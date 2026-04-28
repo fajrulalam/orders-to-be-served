@@ -13,6 +13,7 @@ public class NewOrderItem {
     private List<SelectedOption> selectedOptions;
     private boolean isMakanan = true; // true=food, false=beverage (default: food)
     private int harga; // unit price
+    private String customerNote; // per-line note from customer (optional)
 
     public NewOrderItem(String namaPesanan, String orderType, int quantity, String status, List<SelectedOption> selectedOptions) {
         this.namaPesanan = namaPesanan;
@@ -21,9 +22,18 @@ public class NewOrderItem {
         this.status = status;
         this.preparedQuantity = 0;
         this.selectedOptions = selectedOptions != null ? selectedOptions : new ArrayList<>();
+        this.customerNote = "";
     }
 
     // Getters and Setters
+    public String getCustomerNote() {
+        return customerNote == null ? "" : customerNote;
+    }
+
+    public void setCustomerNote(String customerNote) {
+        this.customerNote = customerNote == null ? "" : customerNote;
+    }
+
     public String getNamaPesanan() {
         return namaPesanan;
     }
@@ -100,6 +110,10 @@ public class NewOrderItem {
             for (String id : optionIds) {
                 keyBuilder.append("_").append(id);
             }
+        }
+        String note = getCustomerNote().trim();
+        if (!note.isEmpty()) {
+            keyBuilder.append("_note_").append(note);
         }
         return keyBuilder.toString();
     }

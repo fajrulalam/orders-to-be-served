@@ -17,7 +17,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="@dimen/main_top_bar_margin"
             android:orientation="vertical"
             android:background="#FFFFFF"
             android:elevation="4dp"
@@ -111,7 +111,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="@dimen/main_top_bar_margin"
             android:layout_marginEnd="16dp"
             android:background="@drawable/filter_bar_bg"
             android:gravity="center"
@@ -131,7 +131,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_toEndOf="@+id/aggregationSection"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="@dimen/main_top_bar_margin"
             android:layout_marginStart="12dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
@@ -169,6 +169,17 @@
                 android:scaleType="centerInside"
                 android:padding="9dp"
                 android:contentDescription="Beverages only" />
+
+            <ImageButton
+                android:id="@+id/filterCustomBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/filter_toggle_unselected_bg"
+                android:src="@drawable/ic_filter_custom"
+                android:scaleType="centerInside"
+                android:padding="9dp"
+                android:contentDescription="Custom Filter" />
 
         </LinearLayout>
 
