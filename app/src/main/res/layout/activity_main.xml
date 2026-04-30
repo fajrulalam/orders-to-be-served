@@ -104,6 +104,22 @@
             android:textStyle="bold"
             android:visibility="gone" />
 
+        <!-- Logout Button (top-right, left of TEST) -->
+        <ImageButton
+            android:id="@+id/logoutBtn"
+            android:layout_width="40dp"
+            android:layout_height="32dp"
+            android:layout_alignParentTop="true"
+            android:layout_toStartOf="@+id/testModeToggleBtn"
+            android:layout_marginTop="@dimen/main_top_bar_margin"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/filter_bar_bg"
+            android:src="@android:drawable/ic_lock_power_off"
+            android:tint="#888888"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="Logout" />
+
         <!-- Testing Mode Toggle Button (top-right) -->
         <TextView
             android:id="@+id/testModeToggleBtn"

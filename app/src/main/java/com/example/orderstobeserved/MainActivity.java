@@ -30,7 +30,10 @@ import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth; // ADDED
+import com.google.firebase.auth.FirebaseUser; // ADDED
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.DocumentChange; // ADDED
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -39,6 +42,10 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.gson.Gson; // ADDED
 import com.google.gson.reflect.TypeToken; // ADDED
+
+import android.media.Ringtone; // ADDED
+import android.media.RingtoneManager; // ADDED
+import android.net.Uri; // ADDED
 
 import java.lang.reflect.Type; // ADDED
 import java.util.ArrayList;
@@ -62,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
     private DividerItemDecoration dividerItemDecoration;
     private ItemTouchHelper itemTouchHelper;
     private FirebaseFirestore fs;
+    private FirebaseAuth mAuth; // ADDED
 
     private SharedPreferences sharedPreferences;
     private Gson gson;
@@ -84,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView testModeToggleBtn;
     private TextView testModeBanner;
     private boolean isTestingMode;
+    private boolean isInitialLoad = true; // ADDED
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +113,15 @@ public class MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         setContentView(R.layout.activity_main);
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            // Not logged in, redirect to LoginActivity
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            finish();
+            return;
+        }
 
         fs = FirebaseFirestore.getInstance();
 
@@ -171,6 +189,13 @@ public class MainActivity extends AppCompatActivity {
         updateTestModeUI();
         testModeToggleBtn.setOnClickListener(v -> toggleTestingMode());
 
+        // Setup logout button
+        findViewById(R.id.logoutBtn).setOnClickListener(v -> {
+            mAuth.signOut();
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            finish();
+        });
+
         // Listener for "Status" collection using the new data structure
         fs.collection(TestingModeManager.col(sharedPreferences, "Status"))
                 .whereEqualTo("canteenId", CANTEEN_ID)
@@ -184,6 +209,20 @@ public class MainActivity extends AppCompatActivity {
                             return;
                         }
                         if (value != null) {
+                            // Check for new orders to play sound
+                            boolean hasNewOrder = false;
+                            for (DocumentChange dc : value.getDocumentChanges()) {
+                                if (dc.getType() == DocumentChange.Type.ADDED) {
+                                    hasNewOrder = true;
+                                    break;
+                                }
+                            }
+
+                            if (hasNewOrder && !isInitialLoad) {
+                                playNotificationSound();
+                            }
+                            isInitialLoad = false;
+
                             // Build a new list from the latest snapshot.
                             List<DocumentSnapshot> snapshotList = value.getDocuments();
                             Log.d(TAG, "Firestore snapshot received: " + snapshotList.size() + " document(s)");
@@ -505,6 +544,18 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             overridePendingTransition(0, 0);
         });
+    }
+
+    private void playNotificationSound() {
+        try {
+            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+            if (r != null) {
+                r.play();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing notification sound", e);
+        }
     }
 
     public void openBackEnd() {

@@ -20,6 +20,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth; // ADDED
+import com.google.firebase.auth.FirebaseUser; // ADDED
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -49,6 +51,7 @@ public class RecentlyServedActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private RecyclerAdapter2 recyclerAdapter;
     private FirebaseFirestore fs;
+    private FirebaseAuth mAuth; // ADDED
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +69,15 @@ public class RecentlyServedActivity extends AppCompatActivity {
         );
         
         setContentView(R.layout.activity_recently_served);
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            // Not logged in, redirect to LoginActivity
+            startActivity(new Intent(RecentlyServedActivity.this, LoginActivity.class));
+            finish();
+            return;
+        }
 
         fs = FirebaseFirestore.getInstance();
         orderBlockArrayList = new ArrayList<>();

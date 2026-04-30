@@ -33,6 +33,8 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.auth.FirebaseAuth; // ADDED
+import com.google.firebase.auth.FirebaseUser; // ADDED
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -73,12 +75,23 @@ public class Pesanan extends AppCompatActivity {
     SwipeRefreshLayout swipeRefreshLayout;
 
     FirebaseFirestore fs;
+    private FirebaseAuth mAuth; // ADDED
     Map<String, Object> pesanan = new HashMap<>();
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            // Not logged in, redirect to LoginActivity
+            startActivity(new Intent(Pesanan.this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_pesanan);
 //        getSupportActionBar().hide();
         reff = FirebaseDatabase.getInstance("https://point-of-sales-app-25e2b-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference("TransacationStatus");
