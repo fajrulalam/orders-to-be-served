@@ -10,6 +10,7 @@ public class AggregatedItem {
     private int servedQuantity;
     private String aggregationKey; // full key including selectedOptions fingerprint
     private List<String> optionNames; // display names of the selectedOptions for this group
+    private boolean isMakanan;
 
     // References to the actual order items for synchronization
     private List<ItemReference> itemReferences;
@@ -62,6 +63,14 @@ public class AggregatedItem {
 
     public int getServedQuantity() {
         return servedQuantity;
+    }
+
+    public boolean getIsMakanan() {
+        return isMakanan;
+    }
+
+    public void setIsMakanan(boolean isMakanan) {
+        this.isMakanan = isMakanan;
     }
 
     // Setters

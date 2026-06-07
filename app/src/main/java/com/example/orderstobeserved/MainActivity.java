@@ -578,6 +578,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         if (recyclerAdapter != null) {
             recyclerAdapter.stopAllTimers();
+            recyclerAdapter.shutdownTTS();
         }
     }
 
@@ -595,6 +596,7 @@ public class MainActivity extends AppCompatActivity {
                     AggregatedItem aggregatedItem = aggregationMap.get(key);
                     if (aggregatedItem == null) {
                         aggregatedItem = new AggregatedItem(key, item.getNamaPesanan(), item.getOrderType());
+                        aggregatedItem.setIsMakanan(item.getIsMakanan());
                         aggregationMap.put(key, aggregatedItem);
                     }
                     aggregatedItem.addItemReference(order.getCustomerNumber(), item);
@@ -612,7 +614,10 @@ public class MainActivity extends AppCompatActivity {
         Collections.sort(aggregatedItemsList, new Comparator<AggregatedItem>() {
             @Override
             public int compare(AggregatedItem o1, AggregatedItem o2) {
-                return Integer.compare(o2.getTotalQuantity(), o1.getTotalQuantity());
+                if (o1.getIsMakanan() != o2.getIsMakanan()) {
+                    return Boolean.compare(o2.getIsMakanan(), o1.getIsMakanan());
+                }
+                return o1.getItemName().compareToIgnoreCase(o2.getItemName());
             }
         });
 

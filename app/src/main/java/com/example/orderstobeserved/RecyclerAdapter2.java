@@ -30,7 +30,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.Comparator;
 import android.widget.ImageView;
+import android.speech.tts.TextToSpeech;
+import java.util.Locale;
 
 public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.ViewHolder> {
 
@@ -45,6 +49,7 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
     private Map<Integer, Runnable> timerRunnables = new HashMap<>(); // keyed by customerNumber
     private int filterMode = FILTER_ALL;
     private List<String> customFilterMenus = new ArrayList<>();
+    private TextToSpeech tts;
 
     public void setCustomFilterMenus(List<String> menus) {
         this.customFilterMenus = menus;
@@ -73,6 +78,18 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
     public RecyclerAdapter2(Context context, ArrayList<OrderBlock> orderBlockList) {
         this.context = context;
         this.orderBlockList = orderBlockList;
+        this.tts = new TextToSpeech(context, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                if (tts != null) {
+                    int result = tts.setLanguage(new Locale("id", "ID"));
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("RecyclerAdapter2", "Language not supported or missing data for Indonesian (id-ID)");
+                    }
+                }
+            } else {
+                Log.e("RecyclerAdapter2", "Initialization of TextToSpeech failed");
+            }
+        });
     }
 
     public void setFilterMode(int mode) {
@@ -127,6 +144,24 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
         return (int) (dp * context.getResources().getDisplayMetrics().density + 0.5f);
     }
 
+    private String toTitleCase(String text) {
+        if (text == null || text.isEmpty()) return text;
+        StringBuilder sb = new StringBuilder();
+        boolean capitalizeNext = true;
+        for (char c : text.toCharArray()) {
+            if (Character.isWhitespace(c)) {
+                capitalizeNext = true;
+                sb.append(c);
+            } else if (capitalizeNext) {
+                sb.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                sb.append(Character.toLowerCase(c));
+            }
+        }
+        return sb.toString();
+    }
+
     @NonNull
     @Override
     public RecyclerAdapter2.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -140,7 +175,47 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
 
         // --- HEADER (side-by-side: "#4 (Name)") ---
         holder.customerNumberView.setText("#" + order.getCustomerNumber());
-        holder.customerNameView.setText("(" + order.getNamaCustomer() + ")");
+        String formattedName = toTitleCase(order.getNamaCustomer());
+        
+        if (order.isMember()) {
+            holder.customerNameView.setText(formattedName);
+            holder.customerNameView.setTextColor(context.getResources().getColor(R.color.kds_member_accent));
+            holder.customerNameView.setBackgroundResource(R.drawable.member_badge_bg);
+            holder.customerNameView.setPadding(dpToPx(12), dpToPx(5), dpToPx(14), dpToPx(5));
+            holder.customerNameView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            holder.customerNameView.setTextSize(14f);
+            
+            // Add person icon to the left
+            holder.customerNameView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_member_person, 0, 0, 0);
+            holder.customerNameView.setCompoundDrawablePadding(dpToPx(8));
+            
+            // Adjust margin
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) holder.customerNameView.getLayoutParams();
+            params.setMargins(dpToPx(12), 0, 0, 0);
+            holder.customerNameView.setLayoutParams(params);
+        } else {
+            holder.customerNameView.setText("(" + formattedName + ")");
+            holder.customerNameView.setTextColor(context.getResources().getColor(R.color.kds_customer_name));
+            holder.customerNameView.setBackground(null);
+            holder.customerNameView.setPadding(0, 0, 0, 0);
+            holder.customerNameView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0); // Remove icon
+            holder.customerNameView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            holder.customerNameView.setTextSize(13f);
+            
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) holder.customerNameView.getLayoutParams();
+            params.setMargins(dpToPx(6), 0, 0, 0);
+            holder.customerNameView.setLayoutParams(params);
+        }
+
+        holder.customerNameView.setOnClickListener(v -> {
+            performHapticFeedback(v);
+            animateClick(v);
+            String nameToSpeak = order.getNamaCustomer();
+            if (tts != null && nameToSpeak != null && !nameToSpeak.isEmpty()) {
+                tts.speak(nameToSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
+            }
+        });
+        
         holder.orderTimeTextView.setText(order.getWaktuPesan());
 
         // --- OPEN BILL BADGE ---
@@ -203,10 +278,23 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
 
         // --- ITEMS ---
         holder.itemsContainer.removeAllViews();
-        ArrayList<NewOrderItem> items = order.getOrderItems();
+        ArrayList<NewOrderItem> rawItems = order.getOrderItems();
+        ArrayList<NewOrderItem> items = new ArrayList<>();
+        if (rawItems != null) {
+            items.addAll(rawItems);
+            Collections.sort(items, new Comparator<NewOrderItem>() {
+                @Override
+                public int compare(NewOrderItem o1, NewOrderItem o2) {
+                    if (o1.getIsMakanan() != o2.getIsMakanan()) {
+                        return Boolean.compare(o2.getIsMakanan(), o1.getIsMakanan());
+                    }
+                    return o1.getNamaPesanan().compareToIgnoreCase(o2.getNamaPesanan());
+                }
+            });
+        }
 
         Log.d("RecyclerAdapter2", "Order #" + order.getCustomerNumber()
-            + " has " + (items != null ? items.size() : 0) + " items");
+            + " has " + items.size() + " items");
 
         boolean isServedOrder = order.getServingTime() != null
             && !order.getServingTime().equals("...");
@@ -214,7 +302,7 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
         boolean allVisibleComplete = true;
         boolean hasVisibleItems = false;
 
-        if (items != null && !items.isEmpty()) {
+        if (!items.isEmpty()) {
             for (int i = 0; i < items.size(); i++) {
                 final NewOrderItem item = items.get(i);
                 if (!matchesFilter(item)) continue;
@@ -317,6 +405,37 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
                 // Apply completion state
                 applyCompletionState(nameView, addonsContainer, customerNoteView, itemBlock,
                     item.getPreparedQuantity() >= totalQuantity);
+
+                // Add visual divider ONLY if transitioning from Food to Drink
+                if (hasVisibleItems && !item.getIsMakanan()) {
+                    // Check if there was a food item before this drink item
+                    boolean hasFoodBefore = false;
+                    for (int j = 0; j < i; j++) {
+                        if (items.get(j).getIsMakanan() && matchesFilter(items.get(j))) {
+                            hasFoodBefore = true;
+                            break;
+                        }
+                    }
+                    
+                    // Only add divider if this is the FIRST drink item after food items
+                    boolean isFirstDrink = true;
+                    for (int j = 0; j < i; j++) {
+                        if (!items.get(j).getIsMakanan() && matchesFilter(items.get(j))) {
+                            isFirstDrink = false;
+                            break;
+                        }
+                    }
+
+                    if (hasFoodBefore && isFirstDrink) {
+                        View sectionDivider = new View(context);
+                        sectionDivider.setBackgroundColor(Color.BLACK);
+                        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(2));
+                        dividerParams.setMargins(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
+                        sectionDivider.setLayoutParams(dividerParams);
+                        holder.itemsContainer.addView(sectionDivider);
+                    }
+                }
 
                 // Click handlers (active orders only)
                 if (!isServedOrder) {
@@ -436,9 +555,9 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
     private void updateProgressDisplay(TextView progressView, int prepared, int total,
                                         int mutedColor, int doneColor) {
         if (prepared >= total) {
-            progressView.setText("\u2713");
+            progressView.setText(prepared + "/" + total + " \u2713");
             progressView.setTextColor(doneColor);
-            progressView.setTextSize(18f);
+            progressView.setTextSize(16f);
         } else {
             progressView.setText(prepared + "/" + total);
             progressView.setTextColor(mutedColor);
@@ -491,6 +610,13 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
             timerHandler.removeCallbacks(runnable);
         }
         timerRunnables.clear();
+    }
+
+    public void shutdownTTS() {
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+        }
     }
 
     private void stopTimerForHolder(@NonNull ViewHolder holder) {

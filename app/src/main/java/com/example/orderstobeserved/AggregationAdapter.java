@@ -96,6 +96,18 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
         // Disable if fully served
         holder.cardContainer.setEnabled(!item.isFullyServed());
         holder.cardContainer.setAlpha(item.isFullyServed() ? 0.5f : 1.0f);
+
+        // Section divider logic (Food vs Drink transition)
+        if (position > 0) {
+            AggregatedItem prevItem = aggregatedItems.get(position - 1);
+            if (prevItem.getIsMakanan() && !item.getIsMakanan()) {
+                holder.sectionDivider.setVisibility(View.VISIBLE);
+            } else {
+                holder.sectionDivider.setVisibility(View.GONE);
+            }
+        } else {
+            holder.sectionDivider.setVisibility(View.GONE);
+        }
     }
 
     private void performHapticFeedback(View view) {
@@ -150,6 +162,7 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
         TextView itemNameText;
         TextView progressText;
         TextView optionsText;
+        View sectionDivider;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -157,6 +170,7 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
             itemNameText = itemView.findViewById(R.id.itemNameText);
             progressText = itemView.findViewById(R.id.progressText);
             optionsText = itemView.findViewById(R.id.optionsText);
+            sectionDivider = itemView.findViewById(R.id.sectionDivider);
         }
     }
 }

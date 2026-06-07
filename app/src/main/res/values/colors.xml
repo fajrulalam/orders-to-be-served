@@ -25,4 +25,6 @@
     <color name="kds_separator">#FFF3F4F6</color>
     <color name="kds_customer_name">#FF6B7280</color>
     <color name="kds_header_text">#FF1A1F36</color>
+    <color name="kds_member_accent">#9333EA</color> <!-- Purple 600 -->
+    <color name="kds_member_light">#F5F3FF</color> <!-- Purple 50 -->
 </resources>
