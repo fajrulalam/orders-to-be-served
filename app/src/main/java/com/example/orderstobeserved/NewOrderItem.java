@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class NewOrderItem {
+    private String menuItemId; // Firestore menu item document ID (round-tripped for POS compatibility)
     private String namaPesanan;
     private String orderType; // "dine-in" or "take-away"
     private int quantity;     // the ordered quantity for this type
@@ -14,8 +15,10 @@ public class NewOrderItem {
     private boolean isMakanan = true; // true=food, false=beverage (default: food)
     private int harga; // unit price
     private String customerNote; // per-line note from customer (optional)
+    private long orderedAt; // timestamp when the item was ordered (in milliseconds)
 
     public NewOrderItem(String namaPesanan, String orderType, int quantity, String status, List<SelectedOption> selectedOptions) {
+        this.menuItemId = "";
         this.namaPesanan = namaPesanan;
         this.orderType = orderType;
         this.quantity = quantity;
@@ -23,9 +26,26 @@ public class NewOrderItem {
         this.preparedQuantity = 0;
         this.selectedOptions = selectedOptions != null ? selectedOptions : new ArrayList<>();
         this.customerNote = "";
+        this.orderedAt = 0;
     }
 
     // Getters and Setters
+    public long getOrderedAt() {
+        return orderedAt;
+    }
+
+    public void setOrderedAt(long orderedAt) {
+        this.orderedAt = orderedAt;
+    }
+
+    public String getMenuItemId() {
+        return menuItemId == null ? "" : menuItemId;
+    }
+
+    public void setMenuItemId(String menuItemId) {
+        this.menuItemId = menuItemId == null ? "" : menuItemId;
+    }
+
     public String getCustomerNote() {
         return customerNote == null ? "" : customerNote;
     }

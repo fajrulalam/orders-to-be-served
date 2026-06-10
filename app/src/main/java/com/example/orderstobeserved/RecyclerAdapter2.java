@@ -285,6 +285,9 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
             Collections.sort(items, new Comparator<NewOrderItem>() {
                 @Override
                 public int compare(NewOrderItem o1, NewOrderItem o2) {
+                    if (o1.getOrderedAt() != o2.getOrderedAt()) {
+                        return Long.compare(o1.getOrderedAt(), o2.getOrderedAt());
+                    }
                     if (o1.getIsMakanan() != o2.getIsMakanan()) {
                         return Boolean.compare(o2.getIsMakanan(), o1.getIsMakanan());
                     }
@@ -302,12 +305,38 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
         boolean allVisibleComplete = true;
         boolean hasVisibleItems = false;
 
+        long lastOrderedAt = -1;
+        int orderRound = 1;
+
         if (!items.isEmpty()) {
             for (int i = 0; i < items.size(); i++) {
                 final NewOrderItem item = items.get(i);
                 if (!matchesFilter(item)) continue;
 
                 hasVisibleItems = true;
+
+                // Add timeline divider if this item belongs to a new order timestamp
+                if (item.getOrderedAt() > 0 && item.getOrderedAt() != lastOrderedAt) {
+                    TextView dividerHeader = new TextView(context);
+                    String formattedTime = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                            .format(new java.util.Date(item.getOrderedAt()));
+                    dividerHeader.setText("🕒 Order #" + orderRound + " (" + formattedTime + ")");
+                    dividerHeader.setTextSize(12f);
+                    dividerHeader.setTextColor(Color.parseColor("#78909C")); // slate gray
+                    dividerHeader.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+                    
+                    LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    int topMargin = holder.itemsContainer.getChildCount() > 0 ? dpToPx(14) : dpToPx(6);
+                    headerParams.setMargins(dpToPx(14), topMargin, dpToPx(14), dpToPx(4));
+                    dividerHeader.setLayoutParams(headerParams);
+                    
+                    holder.itemsContainer.addView(dividerHeader);
+                    
+                    lastOrderedAt = item.getOrderedAt();
+                    orderRound++;
+                }
+
                 final int totalQuantity = item.getQuantity();
                 final boolean isTakeAway = "take-away".equalsIgnoreCase(item.getOrderType());
 

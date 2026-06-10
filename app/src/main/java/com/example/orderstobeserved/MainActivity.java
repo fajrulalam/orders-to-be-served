@@ -362,6 +362,23 @@ public class MainActivity extends AppCompatActivity {
                                                     }
                                                 }
 
+                                                // Parse menuItemId (for POS round-trip)
+                                                String menuItemId = "";
+                                                Object menuItemIdObj = itemMap.get("menuItemId");
+                                                if (menuItemIdObj != null && !String.valueOf(menuItemIdObj).trim().isEmpty()
+                                                        && !String.valueOf(menuItemIdObj).equalsIgnoreCase("null")) {
+                                                    menuItemId = String.valueOf(menuItemIdObj);
+                                                }
+
+                                                // Parse orderedAt
+                                                long orderedAt = 0;
+                                                Object orderedAtObj = itemMap.get("orderedAt");
+                                                if (orderedAtObj != null) {
+                                                    try {
+                                                        orderedAt = Long.parseLong(String.valueOf(orderedAtObj));
+                                                    } catch (NumberFormatException ignored) {}
+                                                }
+
                                                 // Parse harga (unit price)
                                                 int harga = 0;
                                                 Object hargaObj = itemMap.get("harga");
@@ -372,6 +389,8 @@ public class MainActivity extends AppCompatActivity {
                                                 // If the same item is ordered for both dine-in and take-away, they should be separate.
                                                 if (dineInQuantity > 0) {
                                                     NewOrderItem dineInItem = new NewOrderItem(namaPesanan, "dine-in", dineInQuantity, status, selectedOptions);
+                                                    dineInItem.setMenuItemId(menuItemId);
+                                                    dineInItem.setOrderedAt(orderedAt);
                                                     dineInItem.setCustomerNote(customerNote);
                                                     dineInItem.setIsMakanan(isMakanan);
                                                     dineInItem.setHarga(harga);
@@ -385,6 +404,8 @@ public class MainActivity extends AppCompatActivity {
                                                 }
                                                 if (takeAwayQuantity > 0) {
                                                     NewOrderItem takeAwayItem = new NewOrderItem(namaPesanan, "take-away", takeAwayQuantity, status, selectedOptions);
+                                                    takeAwayItem.setMenuItemId(menuItemId);
+                                                    takeAwayItem.setOrderedAt(orderedAt);
                                                     takeAwayItem.setCustomerNote(customerNote);
                                                     takeAwayItem.setIsMakanan(isMakanan);
                                                     takeAwayItem.setHarga(harga);

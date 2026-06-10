@@ -24,7 +24,7 @@ public final class StatusOrderItemsBuilder {
         }
 
         for (NewOrderItem item : items) {
-            String baseKey = item.getNamaPesanan();
+            String baseKey = item.getNamaPesanan() + "_" + item.getOrderedAt();
             if (item.getSelectedOptions() != null && !item.getSelectedOptions().isEmpty()) {
                 List<String> ids = new ArrayList<>();
                 for (SelectedOption opt : item.getSelectedOptions()) {
@@ -44,6 +44,7 @@ public final class StatusOrderItemsBuilder {
             if (group == null) {
                 group = new HashMap<>();
                 group.put("namaPesanan", item.getNamaPesanan());
+                group.put("menuItemId", item.getMenuItemId());
                 group.put("dineInQuantity", 0);
                 group.put("takeAwayQuantity", 0);
                 group.put("dineInPreparedQuantity", 0);
@@ -52,6 +53,7 @@ public final class StatusOrderItemsBuilder {
                 group.put("isMakanan", item.getIsMakanan());
                 group.put("harga", item.getHarga());
                 group.put("customerNote", item.getCustomerNote());
+                group.put("orderedAt", item.getOrderedAt());
 
                 if (item.getSelectedOptions() != null && !item.getSelectedOptions().isEmpty()) {
                     ArrayList<Map<String, Object>> optList = new ArrayList<>();

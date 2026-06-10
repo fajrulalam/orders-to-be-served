@@ -512,6 +512,22 @@ public class RecentlyServedActivity extends AppCompatActivity {
     }
 
     private static void applyItemMetaFromFirestoreMap(Map<String, Object> itemMap, NewOrderItem orderItem) {
+        // Parse menuItemId (for POS round-trip)
+        if (itemMap.containsKey("menuItemId")) {
+            Object menuItemIdObj = itemMap.get("menuItemId");
+            if (menuItemIdObj != null && !String.valueOf(menuItemIdObj).trim().isEmpty()
+                    && !String.valueOf(menuItemIdObj).equalsIgnoreCase("null")) {
+                orderItem.setMenuItemId(String.valueOf(menuItemIdObj));
+            }
+        }
+
+        // Parse orderedAt
+        if (itemMap.containsKey("orderedAt")) {
+            try {
+                orderItem.setOrderedAt(Long.parseLong(String.valueOf(itemMap.get("orderedAt"))));
+            } catch (NumberFormatException ignored) {}
+        }
+
         boolean isMakanan = true;
         if (itemMap.containsKey("isMakanan")) {
             Object isMakananObj = itemMap.get("isMakanan");
