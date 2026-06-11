@@ -216,7 +216,12 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
             }
         });
         
-        holder.orderTimeTextView.setText(order.getWaktuPesan());
+        if (order.isOpenBill()) {
+            holder.orderTimeTextView.setVisibility(View.GONE);
+        } else {
+            holder.orderTimeTextView.setVisibility(View.VISIBLE);
+            holder.orderTimeTextView.setText(order.getWaktuPesan());
+        }
 
         // --- OPEN BILL BADGE ---
         if (order.isOpenBill()) {
@@ -316,7 +321,7 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
                 hasVisibleItems = true;
 
                 // Add timeline divider if this item belongs to a new order timestamp
-                if (item.getOrderedAt() > 0 && item.getOrderedAt() != lastOrderedAt) {
+                if (order.isOpenBill() && item.getOrderedAt() > 0 && item.getOrderedAt() != lastOrderedAt) {
                     TextView dividerHeader = new TextView(context);
                     String formattedTime = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                             .format(new java.util.Date(item.getOrderedAt()));
