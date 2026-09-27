@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Read [docs/KDS_AGENT_GUIDE.md](docs/KDS_AGENT_GUIDE.md) before changing anything that reads or writes Firestore.** Every order shown here is created by the 375POS cashier app (`/Users/ghinannavsih/Documents/375POS`), and the guide documents the shared `Status`/`RecentlyServed` contract, the rules that keep both apps consistent, and known cross-app gaps. Where it disagrees with this file, the guide was verified against both codebases more recently.
+
 ## Build Commands
 
 ```bash

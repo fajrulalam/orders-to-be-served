@@ -1,6 +1,7 @@
 package com.example.orderstobeserved;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -44,6 +45,12 @@ public class AggregationAdapter extends RecyclerView.Adapter<AggregationAdapter.
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.aggregated_item_card, parent, false);
+        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) view.getLayoutParams();
+            params.width = dpToPx(176);
+            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            view.setLayoutParams(params);
+        }
         return new ViewHolder(view);
     }
 

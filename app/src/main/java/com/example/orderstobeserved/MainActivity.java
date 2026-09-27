@@ -5,11 +5,13 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -52,9 +54,11 @@ import java.util.ArrayList;
 import java.util.Collections; // ADDED
 import java.util.Comparator; // ADDED
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -77,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     // Aggregation
     private LinearLayout aggregationSection;
     private RecyclerView aggregationRecyclerView;
+    private View filterBar;
     private AggregationAdapter aggregationAdapter;
     private ArrayList<AggregatedItem> aggregatedItemsList;
     private ImageButton toggleAggregationButton;
@@ -86,13 +91,30 @@ public class MainActivity extends AppCompatActivity {
     // Filter
     private int currentFilter = RecyclerAdapter2.FILTER_ALL;
     private ImageButton filterAllBtn, filterFoodBtn, filterDrinkBtn, filterCustomBtn;
-    private List<String> customFilterMenus = new ArrayList<>();
+    private TextView filterGroupLabel;
+    private MenuGroupManager menuGroupManager;
+    private MenuGroup activeMenuGroup; // group applied by FILTER_CUSTOM
 
     // Testing Mode
     private TextView testModeToggleBtn;
     private TextView testModeBanner;
     private boolean isTestingMode;
     private boolean isInitialLoad = true; // ADDED
+
+    // Ingredient mode (back kitchen): orders shown as ingredients. Remembered per tablet.
+    private static final String PREF_INGREDIENT_MODE = "ingredient_mode_enabled";
+    private boolean isIngredientMode;
+    private TextView ingredientModeToggleBtn;
+    private TextView summaryTitle;
+    private TextView ingredientEmptyText;
+    private IngredientCatalog ingredientCatalog;
+    private IngredientProgressStore ingredientProgressStore;
+    private String ingredientCatalogError;
+    private Map<Integer, List<IngredientBoard.Task>> ingredientTasks = new HashMap<>();
+    private final ArrayList<IngredientBoard.Total> ingredientTotals = new ArrayList<>();
+    private IngredientSummaryAdapter ingredientSummaryAdapter;
+    private final IngredientBoard.ProgressSource ingredientProgress = (orderKey, progressKey) ->
+            ingredientProgressStore == null ? 0 : ingredientProgressStore.getDone(orderKey, progressKey);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,17 +167,17 @@ public class MainActivity extends AppCompatActivity {
         // Initialize aggregation views
         aggregationSection = findViewById(R.id.aggregationSection);
         aggregationRecyclerView = findViewById(R.id.aggregationRecyclerView);
+        filterBar = findViewById(R.id.filterBar);
         toggleAggregationButton = findViewById(R.id.toggleAggregationButton);
         showAggregationFab = findViewById(R.id.showAggregationFab);
         aggregatedItemsList = new ArrayList<>();
+        aggregationRecyclerView.setLayoutManager(new LinearLayoutManager(this,
+                isPortraitUi() ? LinearLayoutManager.HORIZONTAL : LinearLayoutManager.VERTICAL,
+                false));
 
-        // Set aggregation section width to 25% of screen width
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int screenWidth = displayMetrics.widthPixels;
-        ViewGroup.LayoutParams params = aggregationSection.getLayoutParams();
-        params.width = (int) (screenWidth * 0.25); // 25% of screen width
-        aggregationSection.setLayoutParams(params);
+        // Keep the existing landscape sidebar; use the full width for portrait summary cards.
+        setAggregationSectionWidth();
+        positionPortraitOrdersRecyclerView(true);
 
         // Setup aggregation adapter with click listener
         aggregationAdapter = new AggregationAdapter(this, aggregatedItemsList, new AggregationAdapter.OnAggregatedItemClickListener() {
@@ -177,10 +199,12 @@ public class MainActivity extends AppCompatActivity {
         filterFoodBtn = findViewById(R.id.filterFoodBtn);
         filterDrinkBtn = findViewById(R.id.filterDrinkBtn);
         filterCustomBtn = findViewById(R.id.filterCustomBtn);
+        filterGroupLabel = findViewById(R.id.filterGroupLabel);
         filterAllBtn.setOnClickListener(v -> setFilter(RecyclerAdapter2.FILTER_ALL));
         filterFoodBtn.setOnClickListener(v -> setFilter(RecyclerAdapter2.FILTER_FOOD));
         filterDrinkBtn.setOnClickListener(v -> setFilter(RecyclerAdapter2.FILTER_DRINK));
-        filterCustomBtn.setOnClickListener(v -> showCustomFilterDialog());
+        filterCustomBtn.setOnClickListener(v -> showMenuGroupPicker());
+        filterGroupLabel.setOnClickListener(v -> showMenuGroupPicker());
 
         // Setup testing mode toggle
         testModeToggleBtn = findViewById(R.id.testModeToggleBtn);
@@ -545,6 +569,16 @@ public class MainActivity extends AppCompatActivity {
 
                             // Apply filter and refresh both views
                             applyFilterAndRefresh();
+
+                            // Drop ingredient progress left behind by orders that are gone. Only
+                            // trust a server snapshot: a cached one may be missing new orders.
+                            if (ingredientProgressStore != null && !value.getMetadata().isFromCache()) {
+                                Set<String> activeOrderKeys = new HashSet<>();
+                                for (OrderBlock order : orderBlockArrayList) {
+                                    activeOrderKeys.add(IngredientProgressStore.orderKey(order));
+                                }
+                                ingredientProgressStore.pruneExcept(activeOrderKeys);
+                            }
                         } else {
                             Log.e(TAG, "onEvent: query snapshot was null");
                         }
@@ -558,7 +592,28 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(recyclerView);
         recyclerAdapter = new RecyclerAdapter2(MainActivity.this, displayedOrders);
         recyclerView.setAdapter(recyclerAdapter);
-        
+
+        menuGroupManager = new MenuGroupManager(this, fs, new MenuGroupManager.Callback() {
+            @Override
+            public void onGroupSelected(MenuGroup group) {
+                applyMenuGroup(group);
+            }
+
+            @Override
+            public void onGroupsChanged() {
+                syncActiveMenuGroup();
+            }
+        });
+        menuGroupManager.start();
+
+        // Ingredient mode toggle (top bar)
+        ingredientModeToggleBtn = findViewById(R.id.ingredientModeToggleBtn);
+        summaryTitle = findViewById(R.id.summaryTitle);
+        ingredientEmptyText = findViewById(R.id.ingredientEmptyText);
+        ingredientSummaryAdapter = new IngredientSummaryAdapter(this, ingredientTotals, this::handleIngredientTotalClick);
+        ingredientModeToggleBtn.setOnClickListener(v -> setIngredientMode(!isIngredientMode));
+        setIngredientMode(sharedPreferences.getBoolean(PREF_INGREDIENT_MODE, false));
+
         // Single toggle FAB - switches to RecentlyServedActivity
         toggleActivityFab.setOnClickListener(v -> {
             Intent intent = new Intent(getApplicationContext(), RecentlyServedActivity.class);
@@ -601,10 +656,18 @@ public class MainActivity extends AppCompatActivity {
             recyclerAdapter.stopAllTimers();
             recyclerAdapter.shutdownTTS();
         }
+        if (menuGroupManager != null) {
+            menuGroupManager.stop();
+        }
+        stopIngredientSources();
     }
 
     // Rebuild aggregation from current orders, respecting current filter
     private void rebuildAggregation() {
+        if (isIngredientMode) {
+            rebuildIngredientSummary();
+            return;
+        }
         Map<String, AggregatedItem> aggregationMap = new HashMap<>();
 
         for (OrderBlock order : orderBlockArrayList) {
@@ -699,6 +762,7 @@ public class MainActivity extends AppCompatActivity {
                     params.width = 0;
                     aggregationSection.setLayoutParams(params);
                     aggregationSection.setVisibility(View.GONE);
+                    positionPortraitOrdersRecyclerView(false);
                     isAggregationVisible = false;
                     
                     // Show FAB when aggregation is hidden
@@ -708,14 +772,10 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .start();
         } else {
-            // Show aggregation section (25% of screen width)
-            DisplayMetrics displayMetrics = new DisplayMetrics();
-            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            int screenWidth = displayMetrics.widthPixels;
-            ViewGroup.LayoutParams params = aggregationSection.getLayoutParams();
-            params.width = (int) (screenWidth * 0.25);
-            aggregationSection.setLayoutParams(params);
+            // Restore the orientation-specific summary width.
+            setAggregationSectionWidth();
             aggregationSection.setVisibility(View.VISIBLE);
+            positionPortraitOrdersRecyclerView(true);
             aggregationSection.setAlpha(0f);
             
             aggregationSection.animate()
@@ -731,6 +791,35 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .start();
         }
+    }
+
+    private boolean isPortraitUi() {
+        return getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+    }
+
+    private void setAggregationSectionWidth() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        ViewGroup.LayoutParams params = aggregationSection.getLayoutParams();
+        params.width = isPortraitUi()
+                ? ViewGroup.LayoutParams.MATCH_PARENT
+                : (int) (displayMetrics.widthPixels * 0.25);
+        aggregationSection.setLayoutParams(params);
+    }
+
+    private void positionPortraitOrdersRecyclerView(boolean summaryVisible) {
+        if (!isPortraitUi() || recyclerView == null || aggregationSection == null || filterBar == null) return;
+
+        RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) recyclerView.getLayoutParams();
+        params.removeRule(RelativeLayout.BELOW);
+        params.addRule(RelativeLayout.BELOW,
+                summaryVisible ? aggregationSection.getId() : filterBar.getId());
+        params.topMargin = summaryVisible ? dpToPx(4) : 0;
+        recyclerView.setLayoutParams(params);
+    }
+
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
     }
 
     // Public method to notify aggregation when items change in RecyclerAdapter
@@ -771,7 +860,7 @@ public class MainActivity extends AppCompatActivity {
         if (currentFilter == RecyclerAdapter2.FILTER_ALL) return true;
         if (currentFilter == RecyclerAdapter2.FILTER_FOOD) return item.getIsMakanan();
         if (currentFilter == RecyclerAdapter2.FILTER_DRINK) return !item.getIsMakanan();
-        if (currentFilter == RecyclerAdapter2.FILTER_CUSTOM) return customFilterMenus != null && customFilterMenus.contains(item.getNamaPesanan());
+        if (currentFilter == RecyclerAdapter2.FILTER_CUSTOM) return activeMenuGroup != null && activeMenuGroup.matches(item);
         return true;
     }
 
@@ -809,6 +898,9 @@ public class MainActivity extends AppCompatActivity {
                 .delete()
                 .addOnSuccessListener(unused ->
                         Toast.makeText(getApplicationContext(), "Order " + customerNumberToBeRemoved + " served", Toast.LENGTH_SHORT).show());
+        // The back kitchen's ingredient ticks are no longer needed once the order is served.
+        IngredientProgressStore.deleteForOrder(fs, TestingModeManager.col(sharedPreferences, "Canteens"),
+                IngredientProgressStore.orderKey(servedOrder));
 
         ArrayList<Map<String, Object>> formattedOrderItems = StatusOrderItemsBuilder.toFirestoreArrayList(servedOrder.getOrderItems());
 
@@ -872,7 +964,20 @@ public class MainActivity extends AppCompatActivity {
     // Rebuild displayedOrders from orderBlockArrayList based on filter, then refresh views
     private void applyFilterAndRefresh() {
         displayedOrders.clear();
-        if (currentFilter == RecyclerAdapter2.FILTER_ALL) {
+        if (isIngredientMode) {
+            // Only orders with at least one ingredient row (after the filter) are shown.
+            ingredientTasks = ingredientCatalog != null && ingredientCatalog.isReady()
+                    ? IngredientBoard.tasksByOrder(orderBlockArrayList, ingredientCatalog, this::matchesCurrentFilter)
+                    : new HashMap<>();
+            for (OrderBlock order : orderBlockArrayList) {
+                if (ingredientTasks.containsKey(order.getCustomerNumber())) {
+                    displayedOrders.add(order);
+                }
+            }
+            if (recyclerAdapter != null) {
+                recyclerAdapter.setIngredientTasks(ingredientTasks, ingredientProgress);
+            }
+        } else if (currentFilter == RecyclerAdapter2.FILTER_ALL) {
             displayedOrders.addAll(orderBlockArrayList);
         } else {
             for (OrderBlock order : orderBlockArrayList) {
@@ -896,12 +1001,142 @@ public class MainActivity extends AppCompatActivity {
         if (recyclerAdapter != null) {
             recyclerAdapter.notifyDataSetChanged();
         }
+        updateIngredientEmptyState();
+    }
+
+    // ── Ingredient mode ─────────────────────────────────────────────────────
+
+    private final IngredientCatalog.Listener ingredientCatalogListener = new IngredientCatalog.Listener() {
+        @Override
+        public void onCatalogChanged() {
+            ingredientCatalogError = null;
+            if (isIngredientMode) applyFilterAndRefresh();
+        }
+
+        @Override
+        public void onCatalogError(String message) {
+            ingredientCatalogError = message;
+            updateIngredientEmptyState();
+        }
+    };
+
+    private final IngredientProgressStore.Listener ingredientProgressListener = new IngredientProgressStore.Listener() {
+        @Override
+        public void onProgressChanged() {
+            if (isIngredientMode) applyFilterAndRefresh();
+        }
+
+        @Override
+        public void onProgressError(String message) {
+            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+        }
+    };
+
+    private void setIngredientMode(boolean enabled) {
+        isIngredientMode = enabled;
+        sharedPreferences.edit().putBoolean(PREF_INGREDIENT_MODE, enabled).apply();
+        if (enabled) {
+            // Recipes and progress follow the orders' environment: test orders reference menus
+            // that only exist under zTesting_Canteens.
+            String canteens = TestingModeManager.col(sharedPreferences, "Canteens");
+            if (ingredientCatalog == null) {
+                ingredientCatalog = new IngredientCatalog();
+                ingredientCatalog.start(fs, canteens, ingredientCatalogListener);
+            }
+            if (ingredientProgressStore == null) {
+                ingredientProgressStore = new IngredientProgressStore(fs, canteens);
+            }
+            ingredientProgressStore.start(ingredientProgressListener);
+            aggregationRecyclerView.setAdapter(ingredientSummaryAdapter);
+        } else {
+            stopIngredientSources();
+            aggregationRecyclerView.setAdapter(aggregationAdapter);
+        }
+        recyclerAdapter.setIngredientMode(enabled);
+        updateIngredientModeUI();
+        applyFilterAndRefresh();
+    }
+
+    private void stopIngredientSources() {
+        if (ingredientCatalog != null) {
+            ingredientCatalog.stop();
+            ingredientCatalog = null;
+        }
+        if (ingredientProgressStore != null) {
+            ingredientProgressStore.stop();
+            ingredientProgressStore = null;
+        }
+        ingredientCatalogError = null;
+    }
+
+    private void updateIngredientModeUI() {
+        // Same label in both states so the button never grows and squeezes the filter bar.
+        if (isIngredientMode) {
+            ingredientModeToggleBtn.setTextColor(Color.WHITE);
+            ingredientModeToggleBtn.setBackgroundResource(R.drawable.ingredient_mode_active_bg);
+        } else {
+            ingredientModeToggleBtn.setTextColor(Color.parseColor("#888888"));
+            ingredientModeToggleBtn.setBackgroundResource(R.drawable.filter_bar_bg);
+        }
+        if (summaryTitle != null) {
+            summaryTitle.setText(isIngredientMode ? "Bahan" : "Summary");
+        }
+    }
+
+    private void updateIngredientEmptyState() {
+        if (ingredientEmptyText == null) return;
+        if (!isIngredientMode || !displayedOrders.isEmpty()) {
+            ingredientEmptyText.setVisibility(View.GONE);
+            return;
+        }
+        String message;
+        if (ingredientCatalogError != null) {
+            message = ingredientCatalogError;
+        } else if (ingredientCatalog == null || !ingredientCatalog.isReady()) {
+            message = "Memuat resep dari POS…";
+        } else {
+            message = "Tidak ada bahan yang perlu disiapkan.\n"
+                    + "Hanya menu yang bahannya diisi di POS yang tampil di sini.";
+        }
+        ingredientEmptyText.setText(message);
+        ingredientEmptyText.setVisibility(View.VISIBLE);
+    }
+
+    private void rebuildIngredientSummary() {
+        ingredientTotals.clear();
+        ingredientTotals.addAll(IngredientBoard.openTotals(displayedOrders, ingredientTasks, ingredientProgress));
+        if (ingredientSummaryAdapter != null) {
+            ingredientSummaryAdapter.notifyDataSetChanged();
+        }
+    }
+
+    /** Ingredient row tapped: one more portion of that ingredient is ready. The menu line is untouched. */
+    public void onIngredientTaskTapped(IngredientBoard.Task task) {
+        int done = task.donePortions(ingredientProgress);
+        if (done >= task.portions()) return;
+        saveIngredientProgress(task, done + 1);
+    }
+
+    /** Ingredient row long-pressed: clear its ticks (portions already served by the cooks stay done). */
+    public void onIngredientTaskReset(IngredientBoard.Task task) {
+        saveIngredientProgress(task, 0);
+    }
+
+    private void handleIngredientTotalClick(IngredientBoard.Total total) {
+        IngredientBoard.Task next = total.nextOpenTask(ingredientProgress);
+        if (next != null) onIngredientTaskTapped(next);
+    }
+
+    private void saveIngredientProgress(IngredientBoard.Task task, int portions) {
+        if (ingredientProgressStore == null) return;
+        ingredientProgressStore.setDone(task.orderKey, task.progressKey, portions, ingredientProgressListener);
+        applyFilterAndRefresh();
     }
 
     // Set the active filter mode
     private void setFilter(int filter) {
         // Always re-apply FILTER_CUSTOM even if it was already active,
-        // because the user may have changed their menu selection in the dialog.
+        // because the user may have picked a different group.
         boolean sameFilter = (currentFilter == filter);
         if (sameFilter && filter != RecyclerAdapter2.FILTER_CUSTOM) return;
         currentFilter = filter;
@@ -926,107 +1161,45 @@ public class MainActivity extends AppCompatActivity {
                 buttons[i].setColorFilter(Color.parseColor("#666666"));
             }
         }
+
+        boolean showGroupLabel = currentFilter == RecyclerAdapter2.FILTER_CUSTOM && activeMenuGroup != null;
+        filterGroupLabel.setVisibility(showGroupLabel ? View.VISIBLE : View.GONE);
+        if (showGroupLabel) {
+            filterGroupLabel.setText(activeMenuGroup.getName());
+        }
     }
 
-    private void showCustomFilterDialog() {
-        Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(60, 60, 60, 60);
-        root.setBackgroundColor(Color.WHITE);
+    private void showMenuGroupPicker() {
+        menuGroupManager.showGroupList(activeMenuGroup != null ? activeMenuGroup.getId() : null);
+    }
 
-        TextView titleView = new TextView(this);
-        titleView.setText("Select Menus Output");
-        titleView.setTextSize(20f);
-        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
-        titleView.setTextColor(Color.BLACK);
-        root.addView(titleView);
+    private void applyMenuGroup(MenuGroup group) {
+        activeMenuGroup = group;
+        recyclerAdapter.setActiveMenuGroup(group);
+        setFilter(RecyclerAdapter2.FILTER_CUSTOM);
+    }
 
-        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
-        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-        scrollParams.setMargins(0, 30, 0, 30);
-        scrollView.setLayoutParams(scrollParams);
-        
-        LinearLayout checkboxContainer = new LinearLayout(this);
-        checkboxContainer.setOrientation(LinearLayout.VERTICAL);
-        scrollView.addView(checkboxContainer);
-        root.addView(scrollView);
-
-        LinearLayout btnRow = new LinearLayout(this);
-        btnRow.setOrientation(LinearLayout.HORIZONTAL);
-        btnRow.setGravity(android.view.Gravity.END);
-
-        android.widget.Button cancelBtn = new android.widget.Button(this);
-        cancelBtn.setText("Cancel");
-        cancelBtn.setBackgroundColor(Color.TRANSPARENT);
-        cancelBtn.setTextColor(Color.parseColor("#888888"));
-        cancelBtn.setOnClickListener(v -> dialog.dismiss());
-        btnRow.addView(cancelBtn);
-
-        android.widget.Space space = new android.widget.Space(this);
-        space.setLayoutParams(new LinearLayout.LayoutParams(40, 1));
-        btnRow.addView(space);
-
-        android.widget.Button applyBtn = new android.widget.Button(this);
-        applyBtn.setText("Apply Base Filter");
-        applyBtn.setBackgroundColor(Color.TRANSPARENT);
-        applyBtn.setTextColor(Color.parseColor("#007AFF"));
-        btnRow.addView(applyBtn);
-
-        root.addView(btnRow);
-        dialog.setContentView(root);
-        
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels * 0.4), (int)(getResources().getDisplayMetrics().heightPixels * 0.8));
+    // Groups are shared: another tablet may have edited or deleted the one applied here.
+    private void syncActiveMenuGroup() {
+        if (activeMenuGroup == null) return;
+        MenuGroup latest = menuGroupManager.findById(activeMenuGroup.getId());
+        if (latest == null) {
+            String removedName = activeMenuGroup.getName();
+            activeMenuGroup = null;
+            recyclerAdapter.setActiveMenuGroup(null);
+            if (currentFilter == RecyclerAdapter2.FILTER_CUSTOM) {
+                Toast.makeText(this, "Grup \"" + removedName + "\" dihapus. Filter kembali ke semua menu.",
+                        Toast.LENGTH_LONG).show();
+                setFilter(RecyclerAdapter2.FILTER_ALL);
+            }
+            return;
         }
-
-        // MenuCollection is always under the real Canteens root — it is NOT
-        // duplicated under zTesting_Canteens, so never apply the testing prefix here.
-        fs.collection("Canteens")
-            .document("canteen375")
-            .collection("MenuCollection")
-            .get()
-            .addOnSuccessListener(queryDocumentSnapshots -> {
-                if (queryDocumentSnapshots.isEmpty()) {
-                    Toast.makeText(this, "MenuCollection is empty for " + CANTEEN_ID, Toast.LENGTH_SHORT).show();
-                }
-                checkboxContainer.removeAllViews();
-                List<android.widget.CheckBox> checkBoxes = new ArrayList<>();
-                for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                    String namaMenu = doc.getId();
-                    android.widget.CheckBox cb = new android.widget.CheckBox(this);
-                    cb.setText(namaMenu);
-                    cb.setTextColor(Color.BLACK);
-                    cb.setTextSize(18f);
-                    cb.setPadding(0, 15, 0, 15);
-                    cb.setChecked(customFilterMenus.contains(namaMenu));
-                    checkBoxes.add(cb);
-                    checkboxContainer.addView(cb);
-                }
-
-                applyBtn.setOnClickListener(v -> {
-                    customFilterMenus.clear();
-                    for (android.widget.CheckBox cb : checkBoxes) {
-                        if (cb.isChecked()) {
-                            customFilterMenus.add(cb.getText().toString());
-                        }
-                    }
-                    if (recyclerAdapter != null) {
-                        recyclerAdapter.setCustomFilterMenus(customFilterMenus);
-                    }
-                    setFilter(RecyclerAdapter2.FILTER_CUSTOM);
-                    dialog.dismiss();
-                });
-            })
-            .addOnFailureListener(e -> {
-                Toast.makeText(this, "Failed to load MenuCollection: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                Log.e(TAG, "Error loading MenuCollection", e);
-            });
-
-        dialog.show();
+        activeMenuGroup = latest;
+        recyclerAdapter.setActiveMenuGroup(latest);
+        if (currentFilter == RecyclerAdapter2.FILTER_CUSTOM) {
+            updateFilterButtons();
+            applyFilterAndRefresh();
+        }
     }
 
     // Toggle testing mode on/off. Clears local order cache and restarts the activity
@@ -1061,6 +1234,13 @@ public class MainActivity extends AppCompatActivity {
                               @NonNull RecyclerView.ViewHolder viewHolder,
                               @NonNull RecyclerView.ViewHolder target) {
             return false;
+        }
+
+        @Override
+        public int getSwipeDirs(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+            // Ingredient mode is the back kitchen's view: a swipe there would serve the order
+            // and remove it from every tablet. Orders are served from the menu view only.
+            return isIngredientMode ? 0 : super.getSwipeDirs(recyclerView, viewHolder);
         }
 
         @Override

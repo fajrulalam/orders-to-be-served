@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/confirm_dialog_bg"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="28dp"
+    android:paddingBottom="24dp">
+
+    <TextView
+        android:id="@+id/editorTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Grup baru"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#1F2937"
+        android:fontFamily="sans-serif-medium" />
+
+    <EditText
+        android:id="@+id/groupNameInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/confirm_btn_cancel_bg"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:hint="Nama grup (mis. Telur, Gorengan)"
+        android:inputType="textCapSentences"
+        android:maxLength="60"
+        android:singleLine="true"
+        android:importantForAutofill="no"
+        android:textSize="16sp"
+        android:textColor="#1F2937"
+        android:textColorHint="#9CA3AF" />
+
+    <EditText
+        android:id="@+id/menuSearchInput"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/confirm_btn_cancel_bg"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:hint="Cari menu…"
+        android:inputType="text"
+        android:singleLine="true"
+        android:importantForAutofill="no"
+        android:textSize="15sp"
+        android:textColor="#1F2937"
+        android:textColorHint="#9CA3AF" />
+
+    <TextView
+        android:id="@+id/selectedCountText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="0 menu dipilih"
+        android:textSize="13sp"
+        android:textColor="#6B7280"
+        android:fontFamily="sans-serif-medium" />
+
+    <TextView
+        android:id="@+id/editorStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Memuat menu…"
+        android:textSize="15sp"
+        android:textColor="#6B7280"
+        android:fontFamily="sans-serif" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="4dp">
+
+        <LinearLayout
+            android:id="@+id/menuCheckboxContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/btnDeleteGroup"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/confirm_btn_primary_bg"
+            android:gravity="center"
+            android:text="Hapus"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/btnCancelEditor"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/confirm_btn_cancel_bg"
+            android:gravity="center"
+            android:text="Batal"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#374151"
+            android:fontFamily="sans-serif-medium" />
+
+        <View
+            android:layout_width="12dp"
+            android:layout_height="0dp" />
+
+        <TextView
+            android:id="@+id/btnSaveGroup"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/dialog_btn_primary_blue_bg"
+            android:gravity="center"
+            android:text="Simpan"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium" />
+
+    </LinearLayout>
+
+</LinearLayout>

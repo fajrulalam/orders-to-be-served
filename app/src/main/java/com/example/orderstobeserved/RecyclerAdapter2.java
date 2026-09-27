@@ -48,11 +48,26 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
     private Handler timerHandler = new Handler(Looper.getMainLooper());
     private Map<Integer, Runnable> timerRunnables = new HashMap<>(); // keyed by customerNumber
     private int filterMode = FILTER_ALL;
-    private List<String> customFilterMenus = new ArrayList<>();
+    private MenuGroup activeMenuGroup;
     private TextToSpeech tts;
 
-    public void setCustomFilterMenus(List<String> menus) {
-        this.customFilterMenus = menus;
+    // Ingredient mode (back kitchen): cards list ingredients instead of menu lines
+    private boolean ingredientMode;
+    private Map<Integer, List<IngredientBoard.Task>> ingredientTasks = new HashMap<>(); // by customerNumber
+    private IngredientBoard.ProgressSource ingredientProgress = (orderKey, progressKey) -> 0;
+
+    public void setActiveMenuGroup(MenuGroup group) {
+        this.activeMenuGroup = group;
+    }
+
+    public void setIngredientMode(boolean enabled) {
+        this.ingredientMode = enabled;
+    }
+
+    public void setIngredientTasks(Map<Integer, List<IngredientBoard.Task>> tasks,
+                                   IngredientBoard.ProgressSource progress) {
+        this.ingredientTasks = tasks;
+        this.ingredientProgress = progress;
     }
 
     // Dine-in item row (dark text on light blue #BBDEFB)
@@ -100,7 +115,7 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
         if (filterMode == FILTER_ALL) return true;
         if (filterMode == FILTER_FOOD) return item.getIsMakanan();
         if (filterMode == FILTER_DRINK) return !item.getIsMakanan();
-        if (filterMode == FILTER_CUSTOM) return customFilterMenus != null && customFilterMenus.contains(item.getNamaPesanan());
+        if (filterMode == FILTER_CUSTOM) return activeMenuGroup != null && activeMenuGroup.matches(item);
         return true;
     }
 
@@ -281,6 +296,11 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
             holder.timerBadge.setVisibility(View.GONE);
         }
 
+        if (ingredientMode) {
+            bindIngredientRows(holder, order);
+            return;
+        }
+
         // --- ITEMS ---
         holder.itemsContainer.removeAllViews();
         ArrayList<NewOrderItem> rawItems = order.getOrderItems();
@@ -322,22 +342,7 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
 
                 // Add timeline divider if this item belongs to a new order timestamp
                 if (order.isOpenBill() && item.getOrderedAt() > 0 && item.getOrderedAt() != lastOrderedAt) {
-                    TextView dividerHeader = new TextView(context);
-                    String formattedTime = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                            .format(new java.util.Date(item.getOrderedAt()));
-                    dividerHeader.setText("🕒 Order #" + orderRound + " (" + formattedTime + ")");
-                    dividerHeader.setTextSize(12f);
-                    dividerHeader.setTextColor(Color.parseColor("#78909C")); // slate gray
-                    dividerHeader.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-                    
-                    LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    int topMargin = holder.itemsContainer.getChildCount() > 0 ? dpToPx(14) : dpToPx(6);
-                    headerParams.setMargins(dpToPx(14), topMargin, dpToPx(14), dpToPx(4));
-                    dividerHeader.setLayoutParams(headerParams);
-                    
-                    holder.itemsContainer.addView(dividerHeader);
-                    
+                    addRoundHeader(holder, item.getOrderedAt(), orderRound);
                     lastOrderedAt = item.getOrderedAt();
                     orderRound++;
                 }
@@ -526,6 +531,179 @@ public class RecyclerAdapter2 extends RecyclerView.Adapter<RecyclerAdapter2.View
 
         // Grey out card when all visible items complete
         updateCardGreyout(holder, order, isServedOrder);
+    }
+
+    /** Open-bill round header: "🕒 Order #2 (08:35)". */
+    private void addRoundHeader(ViewHolder holder, long orderedAt, int round) {
+        TextView dividerHeader = new TextView(context);
+        String formattedTime = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                .format(new java.util.Date(orderedAt));
+        dividerHeader.setText("🕒 Order #" + round + " (" + formattedTime + ")");
+        dividerHeader.setTextSize(12f);
+        dividerHeader.setTextColor(Color.parseColor("#78909C")); // slate gray
+        dividerHeader.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+
+        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        int topMargin = holder.itemsContainer.getChildCount() > 0 ? dpToPx(14) : dpToPx(6);
+        headerParams.setMargins(dpToPx(14), topMargin, dpToPx(14), dpToPx(4));
+        dividerHeader.setLayoutParams(headerParams);
+
+        holder.itemsContainer.addView(dividerHeader);
+    }
+
+    /**
+     * Ingredient mode: one row per ingredient of each menu line. A tap prepares one portion of that
+     * ingredient, a long-press resets it; neither touches the menu line's preparedQuantity.
+     */
+    private void bindIngredientRows(ViewHolder holder, OrderBlock order) {
+        holder.itemsContainer.removeAllViews();
+        List<IngredientBoard.Task> tasks = ingredientTasks.get(order.getCustomerNumber());
+        if (tasks == null) tasks = new ArrayList<>();
+
+        long lastOrderedAt = -1;
+        int orderRound = 1;
+        boolean seenFood = false;
+        boolean drinkDividerAdded = false;
+        boolean allDone = !tasks.isEmpty();
+
+        for (final IngredientBoard.Task task : tasks) {
+            final NewOrderItem item = task.item;
+
+            if (order.isOpenBill() && item.getOrderedAt() > 0 && item.getOrderedAt() != lastOrderedAt) {
+                addRoundHeader(holder, item.getOrderedAt(), orderRound);
+                lastOrderedAt = item.getOrderedAt();
+                orderRound++;
+            }
+            if (item.getIsMakanan()) {
+                seenFood = true;
+            } else if (seenFood && !drinkDividerAdded) {
+                View sectionDivider = new View(context);
+                sectionDivider.setBackgroundColor(Color.BLACK);
+                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(2));
+                dividerParams.setMargins(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
+                sectionDivider.setLayoutParams(dividerParams);
+                holder.itemsContainer.addView(sectionDivider);
+                drinkDividerAdded = true;
+            }
+
+            final boolean isTakeAway = "take-away".equalsIgnoreCase(item.getOrderType());
+            final int textColor = isTakeAway ? COLOR_TA_TEXT : COLOR_DI_TEXT;
+            final int progressMuted = isTakeAway ? COLOR_TA_PROGRESS_MUTED : COLOR_DI_PROGRESS_MUTED;
+            final int progressDone = isTakeAway ? COLOR_TA_PROGRESS_DONE : COLOR_DI_PROGRESS_DONE;
+
+            int donePortions = task.donePortions(ingredientProgress);
+            int perPortion = task.ingredient.perPortion;
+            boolean isDone = donePortions >= task.portions();
+            if (!isDone) allDone = false;
+
+            LinearLayout itemBlock = new LinearLayout(context);
+            itemBlock.setOrientation(LinearLayout.VERTICAL);
+            itemBlock.setPadding(dpToPx(14), dpToPx(12), dpToPx(14), dpToPx(12));
+            itemBlock.setBackgroundResource(isTakeAway
+                    ? R.drawable.item_button_takeaway_bg
+                    : R.drawable.item_button_dinein_bg);
+            LinearLayout.LayoutParams blockParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            blockParams.setMargins(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
+            itemBlock.setLayoutParams(blockParams);
+
+            // "Telur ×2 pcs" (amount still to prepare) + "0/2"
+            LinearLayout topRow = new LinearLayout(context);
+            topRow.setOrientation(LinearLayout.HORIZONTAL);
+            topRow.setGravity(Gravity.CENTER_VERTICAL);
+
+            TextView nameView = new TextView(context);
+            int remainingAmount = (task.portions() - donePortions) * perPortion;
+            nameView.setText(task.ingredient.name + " ×"
+                    + IngredientBoard.formatAmount(remainingAmount, task.ingredient.unit));
+            nameView.setTextSize(17f);
+            nameView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+            nameView.setTextColor(textColor);
+            nameView.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+            TextView progressView = new TextView(context);
+            updateProgressDisplay(progressView, donePortions * perPortion, task.totalAmount(),
+                    progressMuted, progressDone);
+            LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            progressParams.setMargins(dpToPx(8), 0, 0, 0);
+            progressView.setLayoutParams(progressParams);
+
+            topRow.addView(nameView);
+            topRow.addView(progressView);
+            itemBlock.addView(topRow);
+
+            // "untuk Masak Mie · Rendang" — which menu line (and options) this ingredient is for
+            StringBuilder forText = new StringBuilder("untuk ").append(item.getNamaPesanan());
+            List<SelectedOption> options = item.getSelectedOptions();
+            if (options != null) {
+                for (SelectedOption option : options) {
+                    forText.append(" · ").append(option.getOptionName());
+                }
+            }
+            TextView forView = new TextView(context);
+            forView.setText(forText.toString());
+            forView.setTextSize(13f);
+            forView.setTextColor(progressMuted);
+            LinearLayout.LayoutParams forParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            forParams.setMargins(0, dpToPx(2), 0, 0);
+            forView.setLayoutParams(forParams);
+            itemBlock.addView(forView);
+
+            // The customer note matters here too (e.g. "tanpa telur").
+            TextView customerNoteView = null;
+            String noteText = item.getCustomerNote().trim();
+            if (!noteText.isEmpty()) {
+                customerNoteView = new TextView(context);
+                customerNoteView.setText(noteText);
+                customerNoteView.setTextSize(14f);
+                customerNoteView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                customerNoteView.setTextColor(COLOR_NOTE_CARD_TEXT);
+                customerNoteView.setBackgroundResource(R.drawable.customer_note_card_bg);
+                customerNoteView.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+                LinearLayout.LayoutParams noteParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                noteParams.setMargins(0, dpToPx(6), 0, 0);
+                customerNoteView.setLayoutParams(noteParams);
+                itemBlock.addView(customerNoteView);
+            }
+
+            applyCompletionState(nameView, null, customerNoteView, itemBlock, isDone);
+
+            itemBlock.setClickable(true);
+            itemBlock.setFocusable(true);
+            itemBlock.setOnClickListener(v -> {
+                if (task.isDone(ingredientProgress)) return;
+                performHapticFeedback(v);
+                animateClick(v);
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).onIngredientTaskTapped(task);
+                }
+            });
+            itemBlock.setOnLongClickListener(v -> {
+                performHapticFeedback(v, 20);
+                animateClick(v);
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).onIngredientTaskReset(task);
+                }
+                return true;
+            });
+
+            holder.itemsContainer.addView(itemBlock);
+        }
+
+        CardView cardView = (CardView) holder.itemView;
+        if (allDone) {
+            cardView.setCardBackgroundColor(COLOR_CARD_GREYED);
+            holder.itemView.setAlpha(0.55f);
+        } else {
+            cardView.setCardBackgroundColor(Color.WHITE);
+            holder.itemView.setAlpha(1.0f);
+        }
     }
 
     /** Checks if all filtered items are complete and greys out the card */

@@ -11,13 +11,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/main_background">
-        <!-- Aggregation Section (Left Sidebar) -->
+        <!-- Portrait Summary Strip -->
         <LinearLayout
             android:id="@+id/aggregationSection"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_alignParentStart="true"
-            android:layout_marginTop="@dimen/main_top_bar_margin"
+            android:layout_width="match_parent"
+            android:layout_height="148dp"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="104dp"
             android:orientation="vertical"
             android:background="#FFFFFF"
             android:elevation="4dp"
@@ -26,8 +26,11 @@
             <!-- Apple-style Header -->
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="20dp"
+                android:layout_height="40dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:background="#FFFFFF">
 
                 <TextView
@@ -35,12 +38,32 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Summary"
-                    android:textSize="34sp"
+                    android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="#000000"
                     android:layout_centerVertical="true"
                     android:fontFamily="sans-serif-light"
                     android:letterSpacing="-0.02" />
+
+                <!-- Active group name stays with Summary so the toolbar stays compact. -->
+                <TextView
+                    android:id="@+id/filterGroupLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_toEndOf="@id/summaryTitle"
+                    android:layout_toStartOf="@id/toggleAggregationButton"
+                    android:layout_marginStart="6dp"
+                    android:gravity="center_vertical"
+                    android:maxWidth="180dp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#6B7280"
+                    android:fontFamily="sans-serif-medium"
+                    android:visibility="gone" />
 
                 <!-- Minimal Close Button -->
                 <ImageButton
@@ -70,7 +93,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:padding="8dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
                 android:clipToPadding="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
@@ -167,10 +193,12 @@
             android:id="@+id/filterBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
-            android:layout_toEndOf="@+id/aggregationSection"
+            android:layout_toStartOf="@+id/ingredientModeToggleBtn"
             android:layout_marginTop="@dimen/main_top_bar_margin"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/filter_bar_bg"
@@ -178,67 +206,50 @@
 
             <ImageButton
                 android:id="@+id/filterAllBtn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="@drawable/filter_toggle_selected_bg"
                 android:src="@drawable/ic_filter_all"
                 android:scaleType="centerInside"
-                android:padding="9dp"
+                android:padding="7dp"
                 android:contentDescription="All items" />
 
             <ImageButton
                 android:id="@+id/filterFoodBtn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="4dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="2dp"
                 android:background="@drawable/filter_toggle_unselected_bg"
                 android:src="@drawable/ic_filter_food"
                 android:scaleType="centerInside"
-                android:padding="9dp"
+                android:padding="7dp"
                 android:contentDescription="Food only" />
 
             <ImageButton
                 android:id="@+id/filterDrinkBtn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="4dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="2dp"
                 android:background="@drawable/filter_toggle_unselected_bg"
                 android:src="@drawable/ic_filter_drink"
                 android:scaleType="centerInside"
-                android:padding="9dp"
+                android:padding="7dp"
                 android:contentDescription="Beverages only" />
 
             <ImageButton
                 android:id="@+id/filterCustomBtn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="4dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="2dp"
                 android:background="@drawable/filter_toggle_unselected_bg"
                 android:src="@drawable/ic_filter_custom"
                 android:scaleType="centerInside"
-                android:padding="9dp"
+                android:padding="7dp"
                 android:contentDescription="Menu groups" />
-
-            <!-- Name of the active menu group; shown only while the group filter is on -->
-            <TextView
-                android:id="@+id/filterGroupLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:maxWidth="200dp"
-                android:gravity="center_vertical"
-                android:paddingStart="8dp"
-                android:paddingEnd="12dp"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#1F2937"
-                android:fontFamily="sans-serif-medium"
-                android:visibility="gone" />
 
         </LinearLayout>
 
-        <!-- Main Orders RecyclerView (below filter bar) -->
+        <!-- Main Orders RecyclerView (below Summary while it is visible) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
@@ -246,8 +257,8 @@
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
             android:layout_marginBottom="16dp"
-            android:layout_below="@+id/filterBar"
-            android:layout_toEndOf="@+id/aggregationSection"
+            android:layout_below="@+id/aggregationSection"
+            android:layout_marginTop="4dp"
             android:background="@android:color/transparent"
             android:clipToPadding="false"
             android:paddingTop="4dp"
@@ -259,8 +270,7 @@
             android:id="@+id/ingredientEmptyText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toEndOf="@+id/aggregationSection"
-            android:layout_centerVertical="true"
+            android:layout_centerInParent="true"
             android:gravity="center"
             android:paddingStart="32dp"
             android:paddingEnd="32dp"
